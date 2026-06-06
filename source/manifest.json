@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Antigram - Explore & Reels Blocker",
+  "name": "ReelKill",
   "description": "Browser extension to fight back Instagram's addictive features.",
   "version": "2.1.1",
   "author": "aymyo",
@@ -52,7 +52,7 @@
   },
 
   "action": {
-    "default_title": "Antigram Options",
+    "default_title": "ReelKill Options",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "public/ag16.png",
