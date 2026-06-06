@@ -26,7 +26,18 @@
     <main class="py-3 px-4">
       <section data-tab-content id="options" class="active">
         <div class="ml-2">
-          <h2>Hide</h2>
+          <h2>Reel Limit</h2>
+          <p class="fw-light">Set a daily limit for reels. Reels in the feed and on the Reels page will be blurred once the limit is hit, and a 24-hour block will activate.</p>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span>Reels watched today:</span>
+            <strong id="aos-reels-today" style="font-size: 16px;">--</strong>
+          </div>
+          <label class="d-flex justify-content-between align-items-center mb-0">
+            <span>Daily limit (1-50):</span>
+            <input type="number" id="aos-daily-limit" min="1" max="50" placeholder="--" disabled style="width: 70px; text-align: center; padding: 0.2rem 0.4rem; background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 0.2rem;">
+          </label>
+
+          <h2 class="pt-3">Hide</h2>
           <form class="fw-light">
             <p class="fw-light">Block the sections you don't want to see.</p>
             <label><input type="checkbox" id="blockReels" /> Hide 'Reels' page </label>
@@ -43,17 +54,6 @@
             <p>If enabled, will always show the 'Following' feed, avoiding suggested content.</p>
             <label>
               <input type="checkbox" id="blockForYouFeed" /> Redirect "For you" feed to "Following"
-            </label>
-
-            <h2 class="pt-3">Reel Limit</h2>
-            <p class="fw-light">Set a daily limit for reels. Reels in the feed and on the Reels page will be blurred once the limit is hit, and a 24-hour block will activate.</p>
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>Reels watched today:</span>
-              <strong id="aos-reels-today" style="font-size: 16px;">--</strong>
-            </div>
-            <label class="d-flex justify-content-between align-items-center mb-0">
-              <span>Daily limit (1-50):</span>
-              <input type="number" id="aos-daily-limit" min="1" max="50" placeholder="--" disabled style="width: 70px; text-align: center; padding: 0.2rem 0.4rem; background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 0.2rem;">
             </label>
           </form>
           <div class="d-flex gap-3 align-items-center pb-2 pt-3">
