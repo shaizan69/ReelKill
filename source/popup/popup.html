@@ -19,6 +19,7 @@
       <nav class="d-flex gap-3 mb-0 p-0 mt-0 ms-auto">
         <a data-tab-target="#options" class="active" href="#">Options</a>
         <a data-tab-target="#about" href="#">About</a>
+        <a href="#" id="aos-dashboard-link" title="Dashboard">📊 Dashboard</a>
       </nav>
     </div>
 
@@ -42,6 +43,17 @@
             <p>If enabled, will always show the 'Following' feed, avoiding suggested content.</p>
             <label>
               <input type="checkbox" id="blockForYouFeed" /> Redirect "For you" feed to "Following"
+            </label>
+
+            <h2 class="pt-3">Reel Limit</h2>
+            <p class="fw-light">Set a daily limit for reels. Reels in the feed and on the Reels page will be blurred once the limit is hit, and a 24-hour block will activate.</p>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>Reels watched today:</span>
+              <strong id="aos-reels-today" style="font-size: 16px;">--</strong>
+            </div>
+            <label class="d-flex justify-content-between align-items-center mb-0">
+              <span>Daily limit (1-50):</span>
+              <input type="number" id="aos-daily-limit" min="1" max="50" placeholder="--" disabled style="width: 70px; text-align: center; padding: 0.2rem 0.4rem; background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 0.2rem;">
             </label>
           </form>
           <div class="d-flex gap-3 align-items-center pb-2 pt-3">
