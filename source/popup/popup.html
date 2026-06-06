@@ -19,12 +19,39 @@
       <nav class="d-flex gap-3 mb-0 p-0 mt-0 ms-auto">
         <a data-tab-target="#options" class="active" href="#">Options</a>
         <a data-tab-target="#about" href="#">About</a>
+        <a href="#" id="aos-dashboard-link" title="AttentionOS Dashboard">📊 Dashboard</a>
       </nav>
     </div>
 
     <main class="py-3 px-4">
       <section data-tab-content id="options" class="active">
         <div class="ml-2">
+          
+          <div class="p-3 mb-4 rounded" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; color: white;">
+            <h2 style="color: white; border-bottom: none; padding-bottom: 0;">AttentionOS</h2>
+            <p class="fw-light mb-2" style="color: #94a3b8; font-size: 14px;">Behavioral intelligence layer</p>
+            
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span style="font-size: 14px;">Reels Watched Today:</span>
+              <strong id="aos-reels-today" style="color: #f59e0b; font-size: 16px;">--</strong>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span style="font-size: 14px;">Daily Reel Limit (Rate Limit):</span>
+              <input type="number" id="aos-daily-limit" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 70px; text-align: center;" min="1" max="50" placeholder="--" disabled>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button id="aos-save-btn" class="btn btn-sm flex-grow-1" style="background: #10b981; color: white; border: none; font-weight: bold;">
+                Save Limit
+              </button>
+              <button id="aos-dashboard-btn" class="btn btn-sm" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid #334155;" title="Open Full Dashboard">
+                📊
+              </button>
+            </div>
+            <small id="aos-status" style="color: #10b981; display: block; margin-top: 8px; text-align: center; height: 16px;"></small>
+          </div>
+
           <h2>Hide</h2>
           <form class="fw-light">
             <p class="fw-light">Block the sections you don't want to see.</p>

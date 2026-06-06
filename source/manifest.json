@@ -11,22 +11,39 @@
     "128": "public/ag128.png"
   },
 
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms", "tabs"],
   "content_scripts": [
     {
       "matches": ["https://*.instagram.com/*", "https://instagram.com/*"],
-      "js": ["content.js"],
+      "js": ["content.js", "attentionos/content-loader.js"],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.js", "modules/main.js", "modules/lib.js"],
+      "resources": [
+        "content.js",
+        "modules/main.js",
+        "modules/lib.js",
+        "attentionos/content-main.js",
+        "attentionos/core/storage.js",
+        "attentionos/core/tracker.js",
+        "attentionos/core/cooldown.js",
+        "attentionos/core/budget.js",
+        "attentionos/core/friction.js",
+        "attentionos/core/intervention.js",
+        "attentionos/analytics/aggregator.js",
+        "attentionos/analytics/heatmap.js",
+        "attentionos/analytics/score.js",
+        "attentionos/ui/reels-blur.js",
+        "attentionos/ui/friction-modal.js"
+      ],
       "matches": ["https://*.instagram.com/*", "https://instagram.com/*"]
     }
   ],
   "background": {
-    "service_worker": "service_worker.js"
+    "service_worker": "service_worker.js",
+    "type": "module"
   },
 
   "options_ui": {
