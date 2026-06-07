@@ -72,17 +72,20 @@ input[type="checkbox"] {
   display: block;
 }
 
-[data-tab-target] {
+[data-tab-target],
+#aos-dashboard-link {
   display: inline-block;
   text-decoration: none;
   padding: 0.1rem 1rem;
   margin: 0;
   border-radius: 0.2rem;
   border: var(--white) 1px solid;
+  cursor: pointer;
 }
 
 [data-tab-target].active,
-[data-tab-target]:hover {
+[data-tab-target]:hover,
+#aos-dashboard-link:hover {
   background-color: var(--white);
   color: var(--black);
 }
