@@ -3,289 +3,280 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AttentionOS — Dashboard</title>
+  <title>ReelKill — Dashboard</title>
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
 
-  <!-- ─── Header ──────────────────────────────────────────────────────── -->
-  <header id="aos-header">
+  <header class="header">
     <div class="header-inner">
-      <div class="header-left">
-        <div class="logo-mark">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-        </div>
-        <h1>AttentionOS</h1>
-      </div>
-      <nav class="header-nav" role="tablist">
-        <button data-tab="today" class="tab-btn active" id="tab-today" role="tab">Today</button>
-        <button data-tab="week" class="tab-btn" id="tab-week" role="tab">This Week</button>
-        <button data-tab="settings" class="tab-btn" id="tab-settings" role="tab">Settings</button>
+      <a href="#" class="brand" aria-label="ReelKill">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span class="brand-name">ReelKill</span>
+      </a>
+      <nav class="tabs" role="tablist">
+        <button data-tab="today" class="tab active" id="tab-today" role="tab" aria-selected="true">Today</button>
+        <button data-tab="week" class="tab" id="tab-week" role="tab" aria-selected="false">This Week</button>
+        <button data-tab="settings" class="tab" id="tab-settings" role="tab" aria-selected="false">Settings</button>
       </nav>
     </div>
   </header>
 
-  <!-- ─── Main Content ────────────────────────────────────────────────── -->
-  <main id="aos-main">
+  <main class="page">
 
-    <!-- ═══ TODAY TAB ═══════════════════════════════════════════════════ -->
-    <section id="panel-today" class="tab-panel active" role="tabpanel" aria-labelledby="tab-today">
+    <!-- ═══ TODAY ═══════════════════════════════════════════════════════ -->
+    <section id="panel-today" class="panel active" role="tabpanel">
 
-      <!-- Score Ring -->
-      <div class="score-section">
-        <div class="score-ring-container" aria-label="Attention score">
-          <svg class="score-ring" viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="ring-bg" cx="60" cy="60" r="52" />
-            <circle class="ring-progress" id="score-ring-progress" cx="60" cy="60" r="52"
-              stroke-dasharray="326.73" stroke-dashoffset="326.73" />
-          </svg>
-          <div class="score-text">
-            <div class="score-value" id="score-value">--</div>
-            <div class="score-label">Attention Score</div>
+      <div class="hero">
+        <div class="hero-score">
+          <span class="score-value" id="score-value">--</span><span class="score-suffix">/100</span>
+        </div>
+        <div class="hero-meta">
+          <span class="hero-label">Attention score</span>
+          <span class="streak" id="streak-badge" hidden>
+            <span class="streak-dot" aria-hidden="true"></span>
+            <span id="streak-count">0</span> day streak
+          </span>
+        </div>
+        <div class="hero-bar" aria-hidden="true">
+          <div class="hero-bar-fill" id="hero-bar-fill"></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-cell">
+          <div class="stat-num" id="stat-reels">--</div>
+          <div class="stat-cap">Reels</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="stat-time">--</div>
+          <div class="stat-cap">Time spent</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="stat-cooldowns">--</div>
+          <div class="stat-cap">Cooldowns</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="stat-sessions">--</div>
+          <div class="stat-cap">Sessions</div>
+        </div>
+      </div>
+      <p class="stat-context" id="stat-reels-limit">Loading your limit…</p>
+
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">01</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Daily budget</h2>
+            <p class="section-sub">Reels watched today against your limit</p>
           </div>
-        </div>
-        <div class="streak-badge" id="streak-badge" hidden>
-          <span class="streak-fire" aria-hidden="true">&#128293;</span>
-          <span><span id="streak-count">0</span> day streak</span>
-        </div>
-      </div>
-
-      <!-- Quick Stats -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#128241;</div>
-          <div class="stat-number" id="stat-reels">--</div>
-          <div class="stat-label">Reels Watched</div>
-          <div class="stat-detail" id="stat-reels-limit">limit not loaded</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#9201;</div>
-          <div class="stat-number" id="stat-time">--</div>
-          <div class="stat-label">Time Spent</div>
-          <div class="stat-detail">viewing reels</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#129482;</div>
-          <div class="stat-number" id="stat-cooldowns">--</div>
-          <div class="stat-label">Cooldowns</div>
-          <div class="stat-detail">triggered today</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#128260;</div>
-          <div class="stat-number" id="stat-sessions">--</div>
-          <div class="stat-label">Sessions</div>
-          <div class="stat-detail">opened Instagram</div>
-        </div>
-      </div>
-
-      <!-- Budget Progress -->
-      <div class="card budget-card">
-        <h3>Daily Budget</h3>
-        <div class="budget-bar-container">
-          <div class="budget-bar">
+        </header>
+        <div class="budget">
+          <div class="budget-track" aria-hidden="true">
             <div class="budget-fill" id="budget-fill"></div>
-            <div class="budget-friction-mark" id="budget-friction-mark" title="Friction warning threshold"></div>
+            <div class="budget-mark" id="budget-friction-mark" title="Friction warning threshold"></div>
           </div>
-          <div class="budget-labels">
-            <span>0</span>
-            <span id="budget-limit-label">--</span>
+          <div class="budget-meta">
+            <span class="budget-status" id="budget-status">Loading…</span>
+            <span class="budget-end">0 — <span id="budget-limit-label">--</span></span>
           </div>
         </div>
-        <div class="budget-status" id="budget-status">Loading&hellip;</div>
-      </div>
+      </section>
 
-      <!-- Hourly Heatmap -->
-      <div class="card heatmap-card">
-        <h3>Activity Heatmap</h3>
-        <p class="card-subtitle">Reel views by hour of day</p>
-        <div class="heatmap-grid" id="heatmap-grid">
-          <!-- Generated by JS -->
-        </div>
-        <div class="heatmap-empty" id="heatmap-empty" hidden>No activity yet today.</div>
-        <div class="heatmap-legend">
-          <span>Less</span>
-          <div class="heatmap-legend-cells">
-            <div class="heatmap-cell legend" style="opacity:0.15"></div>
-            <div class="heatmap-cell legend" style="opacity:0.35"></div>
-            <div class="heatmap-cell legend" style="opacity:0.55"></div>
-            <div class="heatmap-cell legend" style="opacity:0.80"></div>
-            <div class="heatmap-cell legend" style="opacity:1.0"></div>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">02</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Today's activity</h2>
+            <p class="section-sub">Reels viewed by hour of day</p>
           </div>
-          <span>More</span>
+        </header>
+        <div class="heatmap-wrap">
+          <div class="heatmap-axis" aria-hidden="true">
+            <span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span>
+          </div>
+          <div class="heatmap" id="heatmap-grid"></div>
+          <div class="empty-state" id="heatmap-empty" hidden>No activity recorded today yet.</div>
         </div>
-      </div>
+      </section>
 
-      <!-- Active Block / Cooldown Status -->
-      <div class="card status-card" id="active-status-card" hidden>
-        <div class="status-alert" id="status-alert">
-          <!-- Filled by JS if block/cooldown active -->
-        </div>
+      <div class="status-alert" id="active-status-card" hidden>
+        <div id="status-alert"></div>
       </div>
 
     </section>
 
-    <!-- ═══ WEEK TAB ════════════════════════════════════════════════════ -->
-    <section id="panel-week" class="tab-panel" role="tabpanel" aria-labelledby="tab-week">
+    <!-- ═══ THIS WEEK ════════════════════════════════════════════════════ -->
+    <section id="panel-week" class="panel" role="tabpanel">
 
-      <!-- Weekly Score Trend -->
-      <div class="card">
-        <h3>Weekly Score Trend</h3>
-        <p class="card-subtitle">Attention score for the last 7 days</p>
-        <div class="weekly-chart" id="weekly-chart">
-          <!-- 7 bar chart generated by JS -->
-        </div>
-        <div class="empty-state" id="weekly-chart-empty" hidden>No data for this week yet.</div>
-      </div>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">01</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Score trend</h2>
+            <p class="section-sub">Attention score for the last seven days</p>
+          </div>
+        </header>
+        <div class="chart" id="weekly-chart"></div>
+        <div class="empty-state" id="weekly-chart-empty" hidden>No data recorded this week yet.</div>
+      </section>
 
-      <!-- Weekly Summary -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#128241;</div>
-          <div class="stat-number" id="week-reels">--</div>
-          <div class="stat-label">Total Reels</div>
+      <div class="stat-row">
+        <div class="stat-cell">
+          <div class="stat-num" id="week-reels">--</div>
+          <div class="stat-cap">Total reels</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#9201;</div>
-          <div class="stat-number" id="week-time">--</div>
-          <div class="stat-label">Total Time</div>
+        <div class="stat-cell">
+          <div class="stat-num" id="week-time">--</div>
+          <div class="stat-cap">Total time</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#129482;</div>
-          <div class="stat-number" id="week-cooldowns">--</div>
-          <div class="stat-label">Cooldowns</div>
+        <div class="stat-cell">
+          <div class="stat-num" id="week-cooldowns">--</div>
+          <div class="stat-cap">Cooldowns</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" aria-hidden="true">&#9889;</div>
-          <div class="stat-number" id="week-avg-score">--</div>
-          <div class="stat-label">Avg Score</div>
+        <div class="stat-cell">
+          <div class="stat-num" id="week-avg-score">--</div>
+          <div class="stat-cap">Avg score</div>
         </div>
       </div>
 
-      <!-- Best / Worst Day -->
-      <div class="card highlights-card">
-        <h3>Highlights</h3>
-        <div class="highlight-row">
-          <div class="highlight best">
-            <span class="highlight-emoji" aria-hidden="true">&#127942;</span>
-            <div class="highlight-text">
-              <div class="highlight-label">Best Day</div>
-              <div class="highlight-value" id="week-best-day">No data</div>
-            </div>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">02</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Highlights</h2>
+            <p class="section-sub">Patterns from the last seven days</p>
           </div>
-          <div class="highlight worst">
-            <span class="highlight-emoji" aria-hidden="true">&#9888;&#65039;</span>
-            <div class="highlight-text">
-              <div class="highlight-label">Worst Day</div>
-              <div class="highlight-value" id="week-worst-day">No data</div>
-            </div>
+        </header>
+        <dl class="highlights">
+          <div class="hi">
+            <dt>Best day</dt>
+            <dd id="week-best-day">No data</dd>
           </div>
-        </div>
-        <div class="highlight-row">
-          <div class="highlight danger">
-            <span class="highlight-emoji" aria-hidden="true">&#128336;</span>
-            <div class="highlight-text">
-              <div class="highlight-label">Danger Window</div>
-              <div class="highlight-value" id="week-danger-hour">No data</div>
-            </div>
+          <div class="hi">
+            <dt>Worst day</dt>
+            <dd id="week-worst-day">No data</dd>
           </div>
-          <div class="highlight blocks">
-            <span class="highlight-emoji" aria-hidden="true">&#128683;</span>
-            <div class="highlight-text">
-              <div class="highlight-label">Hard Block Days</div>
-              <div class="highlight-value" id="week-block-days">--</div>
-            </div>
+          <div class="hi">
+            <dt>Danger window</dt>
+            <dd id="week-danger-hour">No data</dd>
           </div>
-        </div>
-      </div>
+          <div class="hi">
+            <dt>Hard block days</dt>
+            <dd id="week-block-days">--</dd>
+          </div>
+        </dl>
+      </section>
 
-      <!-- Weekly Heatmap -->
-      <div class="card heatmap-card">
-        <h3>Weekly Activity Heatmap</h3>
-        <p class="card-subtitle">Aggregated reel views by hour, last 7 days</p>
-        <div class="heatmap-grid" id="weekly-heatmap-grid"></div>
-        <div class="heatmap-empty" id="weekly-heatmap-empty" hidden>No activity recorded in the last 7 days.</div>
-        <div class="heatmap-legend">
-          <span>Less</span>
-          <div class="heatmap-legend-cells">
-            <div class="heatmap-cell legend" style="opacity:0.15"></div>
-            <div class="heatmap-cell legend" style="opacity:0.35"></div>
-            <div class="heatmap-cell legend" style="opacity:0.55"></div>
-            <div class="heatmap-cell legend" style="opacity:0.80"></div>
-            <div class="heatmap-cell legend" style="opacity:1.0"></div>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">03</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Weekly activity</h2>
+            <p class="section-sub">Reel views by hour, last 7 days</p>
           </div>
-          <span>More</span>
+        </header>
+        <div class="heatmap-wrap">
+          <div class="heatmap-axis" aria-hidden="true">
+            <span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span>
+          </div>
+          <div class="heatmap" id="weekly-heatmap-grid"></div>
+          <div class="empty-state" id="weekly-heatmap-empty" hidden>No activity in the last seven days.</div>
         </div>
-      </div>
+      </section>
 
     </section>
 
-    <!-- ═══ SETTINGS TAB ════════════════════════════════════════════════ -->
-    <section id="panel-settings" class="tab-panel" role="tabpanel" aria-labelledby="tab-settings">
+    <!-- ═══ SETTINGS ═════════════════════════════════════════════════════ -->
+    <section id="panel-settings" class="panel" role="tabpanel">
 
-      <div class="card settings-card">
-        <h3>Daily Reel Limit</h3>
-        <p class="card-subtitle">Maximum reels per day (hard ceiling: 50)</p>
-        <div class="setting-row range-row">
-          <input type="range" id="setting-daily-limit" min="1" max="50" class="range-input" disabled>
-          <span class="range-value" id="setting-daily-limit-value">--</span>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">01</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Daily reel limit</h2>
+            <p class="section-sub">Maximum reels per day. Hard ceiling: 50.</p>
+          </div>
+        </header>
+        <div class="setting-row">
+          <input type="range" id="setting-daily-limit" min="1" max="50" class="slider" disabled>
+          <span class="setting-value" id="setting-daily-limit-value">--</span>
         </div>
-      </div>
+      </section>
 
-      <div class="card settings-card">
-        <h3>Binge Detection</h3>
-        <p class="card-subtitle">Cooldown triggers when you watch too many reels in a short window</p>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">02</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Binge detection</h2>
+            <p class="section-sub">Cooldown triggers when you watch this many reels in the window.</p>
+          </div>
+        </header>
         <div class="setting-row">
           <label for="setting-binge-threshold">Reels threshold</label>
-          <input type="number" id="setting-binge-threshold" min="3" max="50" class="number-input" disabled>
+          <input type="number" id="setting-binge-threshold" min="3" max="50" class="input" disabled>
         </div>
         <div class="setting-row">
           <label for="setting-binge-window">Window (minutes)</label>
-          <input type="number" id="setting-binge-window" min="1" max="60" class="number-input" disabled>
+          <input type="number" id="setting-binge-window" min="1" max="60" class="input" disabled>
         </div>
-      </div>
+      </section>
 
-      <div class="card settings-card">
-        <h3>Cooldown Duration</h3>
-        <p class="card-subtitle">Base duration for the 1st cooldown (escalates automatically)</p>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">03</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Cooldown duration</h2>
+            <p class="section-sub">Base for the 1st cooldown. Escalates 1× → 2× → 4× → 6×.</p>
+          </div>
+        </header>
         <div class="setting-row">
           <label for="setting-cooldown-base">Base (seconds)</label>
-          <input type="number" id="setting-cooldown-base" min="60" max="3600" class="number-input" disabled>
+          <input type="number" id="setting-cooldown-base" min="60" max="3600" class="input" disabled>
         </div>
-        <p class="setting-escalation">Escalation: 1&times; &rarr; 2&times; &rarr; 4&times; &rarr; 6&times;</p>
-      </div>
+      </section>
 
-      <div class="card settings-card">
-        <h3>Friction Warning</h3>
-        <p class="card-subtitle">Show a warning when you reach this % of your daily limit</p>
-        <div class="setting-row range-row">
-          <input type="range" id="setting-friction-pct" min="0.5" max="0.95" step="0.05" class="range-input" disabled>
-          <span class="range-value" id="setting-friction-pct-value">--</span>
+      <section class="section">
+        <header class="section-head">
+          <span class="section-num">04</span>
+          <div class="section-head-text">
+            <h2 class="section-title">Friction warning</h2>
+            <p class="section-sub">Show a warning at this percentage of your daily limit.</p>
+          </div>
+        </header>
+        <div class="setting-row">
+          <input type="range" id="setting-friction-pct" min="0.5" max="0.95" step="0.05" class="slider" disabled>
+          <span class="setting-value" id="setting-friction-pct-value">--</span>
         </div>
+      </section>
+
+      <div class="actions">
+        <button id="settings-save" class="btn-primary" disabled>Save settings</button>
+        <span class="status" id="settings-status" role="status"></span>
       </div>
 
-      <div class="settings-actions">
-        <button id="settings-save" class="btn-primary" disabled>Save Settings</button>
-        <span id="settings-status" class="settings-status" role="status"></span>
-      </div>
-
-      <div class="card settings-card settings-info">
-        <h3>How Settings Work</h3>
-        <ul>
+      <section class="section">
+        <header class="section-head">
+          <div class="section-head-text">
+            <h2 class="section-title">How settings work</h2>
+          </div>
+        </header>
+        <ul class="info-list">
           <li><strong>Tightening</strong> (lower limits, longer cooldowns) applies <em>immediately</em>.</li>
           <li><strong>Loosening</strong> (higher limits, shorter cooldowns) is <em>queued for 24 hours</em>.</li>
           <li>This prevents impulsive loosening during a binge.</li>
         </ul>
-      </div>
+      </section>
 
-      <!-- Data Management -->
-      <div class="card settings-card">
-        <h3>Data</h3>
-        <p class="card-subtitle">All data is stored locally. Nothing leaves your browser.</p>
-        <button id="export-data" class="btn-secondary">Export Data (JSON)</button>
-      </div>
+      <section class="section">
+        <header class="section-head">
+          <div class="section-head-text">
+            <h2 class="section-title">Data</h2>
+            <p class="section-sub">All data is stored locally. Nothing leaves your browser.</p>
+          </div>
+        </header>
+        <button id="export-data" class="btn-secondary">Export data (JSON)</button>
+      </section>
 
     </section>
 

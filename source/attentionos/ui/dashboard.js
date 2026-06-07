@@ -1,5 +1,5 @@
 /**
- * AttentionOS — Dashboard Controller
+ * ReelKill — Dashboard Controller
  *
  * Renders the analytics dashboard by reading from chrome.storage.local
  * and computing derived metrics via the analytics modules.
@@ -13,6 +13,10 @@
  *
  * Settings inputs start disabled with "--" placeholders, then become
  * editable + populated once the stored settings have been read.
+ *
+ * Live updates: subscribes to chrome.storage.onChanged so the dashboard
+ * updates instantly when the tracker logs a new reel view, even if the
+ * 30-second refresh interval hasn't fired yet.
  */
 
 import { getSettings, updateSettings, getState, todayUTC, getAllEvents } from '../core/storage.js';
@@ -24,16 +28,25 @@ import { generateDailyHeatmap, generateRangeHeatmap, formatHeatmapForDisplay } f
 const REFRESH_MS = 30000;
 const EMPTY = '--';
 
+// Heatmap intensity stops. Index 0 = no data, index 4 = peak.
+const HEAT_STOPS = [
+  'var(--bg-soft)',       // 0
+  '#e9d8b8',              // 1
+  '#dcbf8a',              // 2
+  '#c89968',              // 3
+  'var(--accent)',        // 4
+];
+
 // ─── State ───────────────────────────────────────────────────────────────────
 
 let refreshInterval = null;
-let hasAnyHistory = false; // True once we've confirmed any aos_events exist
+let storageListener = null;
+let hasAnyHistory = false;
 let settingsLoaded = false;
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
-  _injectSVGDefs();
   _setupTabNavigation();
   _setupSettings();
   _setupExport();
@@ -41,6 +54,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   await _refreshAll();
 
   refreshInterval = setInterval(_refreshAll, REFRESH_MS);
+
+  // Live updates — refresh whenever storage changes
+  storageListener = (changes, area) => {
+    if (area === 'local') _refreshAll();
+  };
+  chrome.storage.onChanged.addListener(storageListener);
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -57,7 +76,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function _refreshAll() {
   try {
-    // Detect whether we have any events at all (used for empty states).
     const allEvents = await getAllEvents();
     hasAnyHistory = allEvents.length > 0;
 
@@ -67,7 +85,7 @@ async function _refreshAll() {
       _loadSettings(),
     ]);
   } catch (err) {
-    console.error('[AttentionOS Dashboard] Refresh error:', err);
+    console.error('[ReelKill Dashboard] Refresh error:', err);
   }
 }
 
@@ -85,12 +103,10 @@ async function _renderTodayPanel() {
     summary.sessions > 0 ||
     summary.cooldowns_triggered > 0;
 
-  // ── Score Ring ──
-  if (hasTodayActivity || hasAnyHistory) {
-    _setScoreRing(summary.attention_score || 0, true);
-  } else {
-    _setScoreRing(0, false);
-  }
+  // ── Hero score ──
+  const score = summary.attention_score || 0;
+  const showScore = hasTodayActivity || hasAnyHistory;
+  _setScore(score, showScore);
 
   // ── Streak ──
   const streakBadge = document.getElementById('streak-badge');
@@ -103,20 +119,21 @@ async function _renderTodayPanel() {
     }
   }
 
-  // ── Stats ──
-  _setText('stat-reels', hasTodayActivity ? summary.reels_watched : EMPTY);
-  _setText('stat-time', hasTodayActivity ? _formatDuration(summary.time_spent_seconds) : EMPTY);
-  _setText('stat-cooldowns', hasTodayActivity ? summary.cooldowns_triggered : EMPTY);
-  _setText('stat-sessions', hasTodayActivity ? summary.sessions : EMPTY);
+  // ── Stat row ──
+  _setStat('stat-reels', summary.reels_watched, hasTodayActivity);
+  _setStat('stat-time', _formatDuration(summary.time_spent_seconds), hasTodayActivity);
+  _setStat('stat-cooldowns', summary.cooldowns_triggered, hasTodayActivity);
+  _setStat('stat-sessions', summary.sessions, hasTodayActivity);
+  _setText('stat-reels-limit', hasTodayActivity
+    ? `${summary.reels_watched} of ${settings.daily_limit} daily limit`
+    : `Your daily limit is ${settings.daily_limit} reels`);
 
-  _setText('stat-reels-limit', `of ${settings.daily_limit} limit`);
-
-  // ── Budget Bar ──
+  // ── Budget ──
   const ratio = settings.daily_limit > 0 ? summary.reels_watched / settings.daily_limit : 0;
   const fillEl = document.getElementById('budget-fill');
   if (fillEl) {
     fillEl.style.width = `${Math.min(ratio * 100, 100)}%`;
-    fillEl.className = 'budget-fill';
+    fillEl.classList.remove('warning', 'critical');
     if (ratio >= 1) fillEl.classList.add('critical');
     else if (ratio >= settings.friction_threshold_pct) fillEl.classList.add('warning');
   }
@@ -131,12 +148,12 @@ async function _renderTodayPanel() {
   const statusEl = document.getElementById('budget-status');
   if (statusEl) {
     if (state.hard_block_active && state.hard_block_expires) {
-      statusEl.textContent = `\u{1F534} Hard block active \u2014 expires ${_formatRelativeTime(state.hard_block_expires)}`;
+      statusEl.textContent = `Hard block active — expires ${_formatRelativeTime(state.hard_block_expires)}`;
     } else if (!hasTodayActivity) {
-      statusEl.textContent = `No reels watched yet today.`;
+      statusEl.textContent = 'No reels watched today.';
     } else if (ratio >= 0.9) {
       const remaining = Math.max(0, settings.daily_limit - summary.reels_watched);
-      statusEl.textContent = `\u26A0\uFE0F ${remaining} reel${remaining !== 1 ? 's' : ''} remaining`;
+      statusEl.textContent = `${remaining} reel${remaining !== 1 ? 's' : ''} remaining`;
     } else {
       statusEl.textContent = `${summary.reels_watched} of ${settings.daily_limit} reels used`;
     }
@@ -157,7 +174,7 @@ async function _renderTodayPanel() {
     _renderHeatmap('heatmap-grid', formatted);
   }
 
-  // ── Active Status ──
+  // ── Active status ──
   _renderActiveStatus(state, settings);
 }
 
@@ -184,25 +201,16 @@ async function _renderWeekPanel() {
     _renderWeeklyChart(report.days);
   }
 
-  // ── Stats ──
-  _setText('week-reels', hasWeekActivity ? report.totals.reels_watched : EMPTY);
-  _setText('week-time', hasWeekActivity ? _formatDuration(report.totals.time_spent_seconds) : EMPTY);
-  _setText('week-cooldowns', hasWeekActivity ? report.totals.cooldowns_triggered : EMPTY);
-  _setText('week-avg-score', report.avg_attention_score != null ? report.avg_attention_score : EMPTY);
+  // ── Stat row ──
+  _setStat('week-reels', report.totals.reels_watched, hasWeekActivity);
+  _setStat('week-time', _formatDuration(report.totals.time_spent_seconds), hasWeekActivity);
+  _setStat('week-cooldowns', report.totals.cooldowns_triggered, hasWeekActivity);
+  _setStat('week-avg-score', report.avg_attention_score != null ? report.avg_attention_score : EMPTY, hasWeekActivity);
 
   // ── Highlights ──
-  _setText(
-    'week-best-day',
-    report.best_day ? `${_formatDate(report.best_day.date)} (${report.best_day.score})` : 'No data'
-  );
-  _setText(
-    'week-worst-day',
-    report.worst_day ? `${_formatDate(report.worst_day.date)} (${report.worst_day.score})` : 'No data'
-  );
-  _setText(
-    'week-danger-hour',
-    report.danger_hour ? `${_formatHour(report.danger_hour.hour)} (${report.danger_hour.count} reels)` : 'No data'
-  );
+  _setText('week-best-day', report.best_day ? `${_formatDate(report.best_day.date)} (${report.best_day.score})` : 'No data');
+  _setText('week-worst-day', report.worst_day ? `${_formatDate(report.worst_day.date)} (${report.worst_day.score})` : 'No data');
+  _setText('week-danger-hour', report.danger_hour ? `${_formatHour(report.danger_hour.hour)} (${report.danger_hour.count} reels)` : 'No data');
   _setText('week-block-days', hasWeekActivity ? report.totals.hard_block_days : EMPTY);
 
   // ── Weekly Heatmap ──
@@ -223,30 +231,39 @@ async function _renderWeekPanel() {
 
 // ─── Renderers ───────────────────────────────────────────────────────────────
 
-function _setScoreRing(score, hasData) {
-  const el = document.getElementById('score-ring-progress');
-  const valueEl = document.getElementById('score-value');
-  if (!el || !valueEl) return;
-
-  const circumference = 2 * Math.PI * 52;
+function _setScore(score, hasData) {
+  const el = document.getElementById('score-value');
+  const fillEl = document.getElementById('hero-bar-fill');
+  if (!el) return;
 
   if (!hasData) {
-    el.style.strokeDashoffset = circumference;
-    el.style.stroke = 'rgba(255, 255, 255, 0.12)';
-    valueEl.textContent = EMPTY;
-    valueEl.style.color = '';
+    el.textContent = EMPTY;
+    el.style.color = '';
+    if (fillEl) fillEl.style.width = '0%';
     return;
   }
 
   const safeScore = Math.max(0, Math.min(100, score));
-  const offset = circumference * (1 - safeScore / 100);
-  el.style.strokeDashoffset = offset;
+  el.textContent = safeScore;
+  el.style.color = safeScore >= 70
+    ? 'var(--positive)'
+    : safeScore >= 40
+    ? 'var(--warning)'
+    : 'var(--critical)';
 
-  const color = safeScore >= 70 ? '#10b981' : safeScore >= 40 ? '#f59e0b' : '#ef4444';
-  el.style.stroke = color;
+  if (fillEl) fillEl.style.width = `${safeScore}%`;
+}
 
-  valueEl.textContent = safeScore;
-  valueEl.style.color = color;
+function _setStat(id, value, hasData) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!hasData) {
+    el.textContent = EMPTY;
+    el.classList.add('is-empty');
+  } else {
+    el.textContent = value;
+    el.classList.remove('is-empty');
+  }
 }
 
 function _renderHeatmap(containerId, data) {
@@ -255,15 +272,21 @@ function _renderHeatmap(containerId, data) {
 
   container.innerHTML = '';
 
+  // Find the max for normalization
+  const max = data.reduce((m, d) => Math.max(m, d.count), 0);
+
   for (const item of data) {
     const cell = document.createElement('div');
     cell.className = 'heatmap-cell';
+    if (item.count > 0) cell.classList.add('has-data');
 
-    if (item.count === 0) {
-      cell.style.opacity = '0.08';
-    } else {
-      cell.style.opacity = Math.max(item.intensity * 0.85 + 0.15, 0.18);
+    // Map intensity 0-1 to a stop index 0-4
+    let stopIdx = 0;
+    if (max > 0 && item.count > 0) {
+      const intensity = item.count / max;
+      stopIdx = Math.min(4, Math.max(1, Math.ceil(intensity * 4)));
     }
+    cell.style.background = HEAT_STOPS[stopIdx];
 
     const tooltip = document.createElement('div');
     tooltip.className = 'heatmap-tooltip';
@@ -291,17 +314,18 @@ function _renderWeeklyChart(days) {
     const scoreLabel = document.createElement('div');
     scoreLabel.className = 'chart-bar-score';
     scoreLabel.textContent = hasScore ? score : EMPTY;
+    if (!hasScore) scoreLabel.classList.add('is-empty');
 
     const barWrap = document.createElement('div');
     barWrap.className = 'chart-bar-wrap';
 
     const bar = document.createElement('div');
     bar.className = 'chart-bar';
-    bar.style.height = `${Math.max(heightPct, 3)}%`;
+    bar.style.height = `${Math.max(heightPct, 2)}%`;
 
     if (!hasScore) {
       bar.classList.add('no-data');
-      bar.style.height = '4px';
+      bar.style.height = '2px';
     } else if (score >= 70) {
       bar.classList.add('high');
     } else if (score >= 40) {
@@ -330,17 +354,17 @@ function _renderActiveStatus(state, settings) {
 
   if (state.hard_block_active && state.hard_block_expires) {
     card.hidden = false;
-    alert.className = 'status-alert block-active';
+    card.classList.remove('cooldown');
     alert.innerHTML = `
-      <strong>\u{1F534} Hard Block Active</strong><br>
+      <strong>Hard block active</strong><br>
       Your daily limit of <strong>${settings.daily_limit}</strong> reels has been reached.
       Instagram will be available again ${_formatRelativeTime(state.hard_block_expires)}.
     `;
   } else if (state.cooldown_active && state.cooldown_expires) {
     card.hidden = false;
-    alert.className = 'status-alert cooldown-active';
+    card.classList.add('cooldown');
     alert.innerHTML = `
-      <strong>\u23F8\uFE0F Cooldown Active</strong><br>
+      <strong>Cooldown active</strong><br>
       Binge detected. Cooldown ends ${_formatRelativeTime(state.cooldown_expires)}.
     `;
   } else {
@@ -421,9 +445,9 @@ function _setupSettings() {
       const statusEl = document.getElementById('settings-status');
       if (statusEl) {
         const parts = [];
-        if (Object.keys(result.applied).length > 0) parts.push('Applied immediately \u2713');
-        if (result.queued) parts.push('Some changes queued for 24h \u23F3');
-        statusEl.textContent = parts.join(' \u00B7 ') || 'No changes';
+        if (Object.keys(result.applied).length > 0) parts.push('Applied immediately');
+        if (result.queued) parts.push('Some changes queued for 24h');
+        statusEl.textContent = parts.join(' · ') || 'No changes';
         setTimeout(() => { statusEl.textContent = ''; }, 4000);
       }
 
@@ -455,35 +479,23 @@ function _setupExport() {
 // ─── Tab Navigation ──────────────────────────────────────────────────────────
 
 function _setupTabNavigation() {
-  const tabs = document.querySelectorAll('.tab-btn');
-  const panels = document.querySelectorAll('.tab-panel');
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const target = tab.dataset.tab;
-      tabs.forEach((t) => t.classList.remove('active'));
+      tabs.forEach((t) => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
       panels.forEach((p) => p.classList.remove('active'));
       tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
       const panel = document.getElementById(`panel-${target}`);
       if (panel) panel.classList.add('active');
     });
   });
-}
-
-// ─── SVG Defs ────────────────────────────────────────────────────────────────
-
-function _injectSVGDefs() {
-  const svg = document.querySelector('.score-ring');
-  if (svg && !svg.querySelector('defs')) {
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    defs.innerHTML = `
-      <linearGradient id="score-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#6366f1" />
-        <stop offset="100%" style="stop-color:#a855f7" />
-      </linearGradient>
-    `;
-    svg.prepend(defs);
-  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
