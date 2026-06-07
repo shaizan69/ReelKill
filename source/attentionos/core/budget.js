@@ -30,32 +30,18 @@ import {
 // ─── Daily Limit Check ──────────────────────────────────────────────────────
 
 /**
- * Recounts reels watched in the current rolling 24-hour window from storage.
+ * Recounts reels watched in the last 24 hours from storage.
  * This is the single source of truth — never rely on an in-memory counter.
  *
- * The window is:
- *  - If a hard block was previously triggered: from (hard_block_expires - 24h) to now
- *  - Otherwise: from (now - 24h) to now
+ * Uses a simple rolling 24h window (`now - 24h` to `now`) regardless
+ * of whether a hard block is active. This ensures events that triggered
+ * the block are always counted, and the counter never resets mid-block.
  *
  * @returns {Promise<number>} Current reel count for the rolling window
  */
 async function recountReels() {
-  const state = await getState();
   const now = new Date();
-
-  let windowStart;
-  if (state.hard_block_expires) {
-    // Rolling window anchored to block expiry
-    windowStart = new Date(
-      new Date(state.hard_block_expires).getTime() - 24 * 60 * 60 * 1000
-    );
-    // But if the block has expired, use standard 24h window
-    if (now.toISOString() >= state.hard_block_expires) {
-      windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    }
-  } else {
-    windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  }
+  const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   const reelEvents = await getEventsInWindow(
     windowStart.toISOString(),
