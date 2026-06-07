@@ -32,15 +32,22 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreOptions();
 });
 
-// Dashboard link in header nav
+// Dashboard links (header nav + the big button under Reel Limit)
+function _openDashboard(e) {
+  if (e) e.preventDefault();
+  chrome.tabs.create({
+    url: chrome.runtime.getURL("attentionos/ui/dashboard.html"),
+  });
+}
+
 const dashboardLink = document.getElementById("aos-dashboard-link");
 if (dashboardLink) {
-  dashboardLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    chrome.tabs.create({
-      url: chrome.runtime.getURL("attentionos/ui/dashboard.html"),
-    });
-  });
+  dashboardLink.addEventListener("click", _openDashboard);
+}
+
+const openDashboardBtn = document.getElementById("aos-open-dashboard");
+if (openDashboardBtn) {
+  openDashboardBtn.addEventListener("click", _openDashboard);
 }
 
 // ─── Antigram-style block-list options (chrome.storage.sync) ────────────────
