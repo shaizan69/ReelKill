@@ -26,10 +26,10 @@
     <main class="rk-main">
       <section data-tab-content id="options" class="active" role="tabpanel">
 
-        <div class="rk-section">
+        <section class="rk-section">
           <header class="rk-section-head">
-            <h2 class="rk-section-title">Reel Limit</h2>
-            <p class="rk-section-desc">Reels blur when you hit your daily limit, and a 24-hour block kicks in.</p>
+            <h2 class="rk-section-title">Reel limit</h2>
+            <p class="rk-section-desc">Reels blur when you hit your limit, and a 24-hour block kicks in.</p>
           </header>
 
           <div class="rk-stat">
@@ -42,7 +42,7 @@
               </span>
             </div>
             <div class="rk-progress" aria-hidden="true">
-              <div id="aos-reels-progress" class="rk-progress-fill" style="width: 0%"></div>
+              <div id="aos-reels-progress" class="rk-progress-fill"></div>
             </div>
           </div>
 
@@ -54,65 +54,77 @@
               <button type="button" class="rk-stepper-btn" data-step="1" aria-label="Increase limit" disabled>+</button>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="rk-section">
-          <header class="rk-section-head">
-            <h2 class="rk-section-title">Hide</h2>
-            <p class="rk-section-desc">Block the sections you don't want to see.</p>
-          </header>
+        <section class="rk-section">
+          <details class="rk-disclose">
+            <summary class="rk-disclose-head">
+              <h2 class="rk-section-title">Hide</h2>
+              <svg class="rk-disclose-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </summary>
+            <div class="rk-disclose-body">
+              <p class="rk-section-desc">Block the sections you don't want to see.</p>
+              <div class="rk-options">
+                <label class="rk-toggle-row">
+                  <span class="rk-toggle-text">Reels page</span>
+                  <input type="checkbox" id="blockReels" class="rk-toggle-input">
+                  <span class="rk-toggle" aria-hidden="true"></span>
+                </label>
+                <label class="rk-toggle-row">
+                  <span class="rk-toggle-text">Explore page</span>
+                  <input type="checkbox" id="blockExplore" class="rk-toggle-input">
+                  <span class="rk-toggle" aria-hidden="true"></span>
+                </label>
+                <label class="rk-toggle-row">
+                  <span class="rk-toggle-text">Stories</span>
+                  <input type="checkbox" id="blockStories" class="rk-toggle-input">
+                  <span class="rk-toggle" aria-hidden="true"></span>
+                </label>
+                <label class="rk-toggle-row">
+                  <span class="rk-toggle-text">Posts</span>
+                  <input type="checkbox" id="blockPosts" class="rk-toggle-input">
+                  <span class="rk-toggle" aria-hidden="true"></span>
+                </label>
+                <label class="rk-toggle-row">
+                  <span class="rk-toggle-text">Threads links</span>
+                  <input type="checkbox" id="blockThreads" class="rk-toggle-input">
+                  <span class="rk-toggle" aria-hidden="true"></span>
+                </label>
+                <label class="rk-toggle-row">
+                  <span class="rk-toggle-text">Suggested followers</span>
+                  <input type="checkbox" id="blockSuggestedFollowers" class="rk-toggle-input">
+                  <span class="rk-toggle" aria-hidden="true"></span>
+                </label>
+              </div>
+            </div>
+          </details>
+        </section>
 
-          <div class="rk-options">
-            <label class="rk-toggle-row">
-              <span class="rk-toggle-text">Reels page</span>
-              <input type="checkbox" id="blockReels" class="rk-toggle-input">
-              <span class="rk-toggle" aria-hidden="true"></span>
-            </label>
-            <label class="rk-toggle-row">
-              <span class="rk-toggle-text">Explore page</span>
-              <input type="checkbox" id="blockExplore" class="rk-toggle-input">
-              <span class="rk-toggle" aria-hidden="true"></span>
-            </label>
-            <label class="rk-toggle-row">
-              <span class="rk-toggle-text">Stories</span>
-              <input type="checkbox" id="blockStories" class="rk-toggle-input">
-              <span class="rk-toggle" aria-hidden="true"></span>
-            </label>
-            <label class="rk-toggle-row">
-              <span class="rk-toggle-text">Posts</span>
-              <input type="checkbox" id="blockPosts" class="rk-toggle-input">
-              <span class="rk-toggle" aria-hidden="true"></span>
-            </label>
-            <label class="rk-toggle-row">
-              <span class="rk-toggle-text">Threads links</span>
-              <input type="checkbox" id="blockThreads" class="rk-toggle-input">
-              <span class="rk-toggle" aria-hidden="true"></span>
-            </label>
-            <label class="rk-toggle-row">
-              <span class="rk-toggle-text">Suggested followers</span>
-              <input type="checkbox" id="blockSuggestedFollowers" class="rk-toggle-input">
-              <span class="rk-toggle" aria-hidden="true"></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="rk-section">
-          <header class="rk-section-head">
-            <h2 class="rk-section-title">Redirect</h2>
-            <p class="rk-section-desc">Avoid suggested content.</p>
-          </header>
-
-          <div class="rk-options">
-            <label class="rk-toggle-row">
-              <span class="rk-toggle-text">
-                <span class="rk-toggle-title">For you → Following</span>
-                <span class="rk-toggle-hint">Always show your Following feed</span>
-              </span>
-              <input type="checkbox" id="blockForYouFeed" class="rk-toggle-input">
-              <span class="rk-toggle" aria-hidden="true"></span>
-            </label>
-          </div>
-        </div>
+        <section class="rk-section">
+          <details class="rk-disclose">
+            <summary class="rk-disclose-head">
+              <h2 class="rk-section-title">Redirect</h2>
+              <svg class="rk-disclose-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </summary>
+            <div class="rk-disclose-body">
+              <p class="rk-section-desc">Avoid suggested content.</p>
+              <div class="rk-options">
+                <label class="rk-toggle-row">
+                  <span class="rk-toggle-text">
+                    <span class="rk-toggle-title">For you → Following</span>
+                    <span class="rk-toggle-hint">Always show your Following feed</span>
+                  </span>
+                  <input type="checkbox" id="blockForYouFeed" class="rk-toggle-input">
+                  <span class="rk-toggle" aria-hidden="true"></span>
+                </label>
+              </div>
+            </div>
+          </details>
+        </section>
 
         <div class="rk-section rk-section-footer">
           <button id="save" class="rk-btn-primary">Save changes</button>

@@ -27,6 +27,9 @@ async function loadAOSStats() {
     if (reelsProgressEl) {
       const pct = limit > 0 ? Math.min(100, (reels / limit) * 100) : 0;
       reelsProgressEl.style.width = `${pct}%`;
+      reelsProgressEl.classList.remove("warning", "critical");
+      if (reels >= limit) reelsProgressEl.classList.add("critical");
+      else if (pct >= 80) reelsProgressEl.classList.add("warning");
     }
     if (limitInput) {
       limitInput.value = limit;
@@ -109,11 +112,9 @@ function showStatus(text) {
   const status = document.getElementById("status");
   if (!status) return;
   status.textContent = text;
-  status.classList.add("rk-status-show");
   clearTimeout(showStatus._t);
   showStatus._t = setTimeout(() => {
     status.textContent = "";
-    status.classList.remove("rk-status-show");
   }, 2000);
 }
 
@@ -124,6 +125,15 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreOptions();
   initStepper();
   initDashboardLink();
+
+  // Live updates — refresh the stat row whenever storage changes.
+  // The tracker logs reel_viewed events; the SW recounts and writes
+  // reels_watched_today. The popup picks it up the moment it changes.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && (changes.aos_state || changes.aos_settings)) {
+      loadAOSStats();
+    }
+  });
 });
 
 document.getElementById("save").addEventListener("click", saveOptions);

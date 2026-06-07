@@ -1,21 +1,47 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ReelKill — Popup
+
+   Warm white + beige editorial palette. Mirrors the dashboard.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --rk-bg: #0d0d0f;
-  --rk-surface: #16161a;
-  --rk-surface-2: #1e1e24;
-  --rk-border: rgba(255, 255, 255, 0.06);
-  --rk-border-strong: rgba(255, 255, 255, 0.1);
-  --rk-text: #f4f4f5;
-  --rk-text-muted: #a1a1aa;
-  --rk-text-dim: #71717a;
-  --rk-accent: #ef4444;
-  --rk-accent-hover: #dc2626;
-  --rk-radius: 8px;
-  --rk-radius-sm: 6px;
-  --rk-radius-lg: 10px;
+  --rk-bg-page: #f4ede0;
+  --rk-bg-surface: #ffffff;
+  --rk-bg-soft: #f0e8d8;
+  --rk-bg-tint: #faf6ed;
+
+  --rk-border: #ddd2bb;
+  --rk-border-soft: #e5dcc9;
+  --rk-border-strong: #c8bca0;
+
+  --rk-text: #1f1a13;
+  --rk-text-muted: #6b6258;
+  --rk-text-dim: #9a9082;
+  --rk-text-faint: #b8ad9b;
+
+  --rk-accent: #b8763a;
+  --rk-accent-hover: #8e5524;
+  --rk-accent-soft: #d4a574;
+  --rk-accent-bg: #f4ead9;
+
+  --rk-positive: #7a9670;
+  --rk-warning: #c89968;
+  --rk-critical: #b85c3a;
+  --rk-critical-bg: #f5e1d4;
+
+  --rk-radius: 4px;
+  --rk-radius-sm: 3px;
+  --rk-radius-lg: 8px;
+
   --rk-fz-12: 12px;
   --rk-fz-13: 13px;
   --rk-fz-11: 11px;
   --rk-fz-15: 15px;
+  --rk-fz-display: 28px;
+
+  --rk-serif: 'Iowan Old Style', 'Charter', 'Georgia', 'Times New Roman', serif;
+  --rk-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI',
+    system-ui, sans-serif;
 }
 
 * {
@@ -25,8 +51,8 @@
 }
 
 body.rk-popup {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  background: var(--rk-bg);
+  font-family: var(--rk-sans);
+  background: var(--rk-bg-page);
   color: var(--rk-text);
   width: 360px;
   font-size: var(--rk-fz-13);
@@ -36,19 +62,20 @@ body.rk-popup {
   text-rendering: optimizeLegibility;
 }
 
-/* ─── Header ──────────────────────────────────────────────────────────── */
+/* ─── Header ──────────────────────────────────────────────────────────────── */
 
 .rk-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--rk-border);
 }
 
 .rk-title {
+  font-family: var(--rk-serif);
   font-size: var(--rk-fz-15);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--rk-text);
 }
@@ -57,8 +84,8 @@ body.rk-popup {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   background: transparent;
   border: 0;
   border-radius: var(--rk-radius-sm);
@@ -69,7 +96,7 @@ body.rk-popup {
 }
 
 .rk-icon-btn:hover {
-  background: var(--rk-surface);
+  background: var(--rk-bg-soft);
   color: var(--rk-text);
 }
 
@@ -78,19 +105,20 @@ body.rk-popup {
   outline-offset: 1px;
 }
 
-/* ─── Tabs ────────────────────────────────────────────────────────────── */
+/* ─── Tabs ────────────────────────────────────────────────────────────────── */
 
 .rk-tabs {
   display: flex;
-  padding: 0 16px;
+  padding: 0 18px;
   border-bottom: 1px solid var(--rk-border);
   gap: 0;
 }
 
 .rk-tab {
+  position: relative;
   background: transparent;
   border: 0;
-  color: var(--rk-text-muted);
+  color: var(--rk-text-dim);
   font-size: var(--rk-fz-13);
   font-weight: 500;
   padding: 10px 12px;
@@ -106,7 +134,7 @@ body.rk-popup {
 }
 
 .rk-tab:hover {
-  color: var(--rk-text);
+  color: var(--rk-text-muted);
 }
 
 .rk-tab.active {
@@ -120,7 +148,7 @@ body.rk-popup {
   border-radius: 2px;
 }
 
-/* ─── Main / Sections ─────────────────────────────────────────────────── */
+/* ─── Main / Sections ─────────────────────────────────────────────────────── */
 
 .rk-main {
   display: block;
@@ -135,7 +163,7 @@ body.rk-popup {
 }
 
 .rk-section {
-  padding: 16px;
+  padding: 18px;
   border-bottom: 1px solid var(--rk-border);
 }
 
@@ -151,7 +179,7 @@ body.rk-popup {
   font-size: var(--rk-fz-11);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--rk-text-dim);
   margin-bottom: 4px;
 }
@@ -186,9 +214,9 @@ body.rk-popup {
 }
 
 .rk-prose code {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 12px;
-  background: var(--rk-surface);
+  background: var(--rk-bg-soft);
   padding: 1px 5px;
   border-radius: 3px;
   color: var(--rk-text);
@@ -206,14 +234,10 @@ body.rk-popup {
   font-size: var(--rk-fz-13);
 }
 
-/* ─── Stat card ───────────────────────────────────────────────────────── */
+/* ─── Stat block ──────────────────────────────────────────────────────────── */
 
 .rk-stat {
-  background: var(--rk-surface);
-  border: 1px solid var(--rk-border);
-  border-radius: var(--rk-radius);
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .rk-stat-row {
@@ -233,48 +257,59 @@ body.rk-popup {
   align-items: baseline;
   gap: 0;
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .rk-stat-current {
-  font-size: 17px;
+  font-family: var(--rk-serif);
+  font-size: var(--rk-fz-display);
   color: var(--rk-text);
+  line-height: 1;
+  letter-spacing: -0.02em;
   transition: color 200ms ease;
 }
 
 .rk-stat-current.rk-stat-warn {
-  color: var(--rk-accent);
+  color: var(--rk-critical);
 }
 
 .rk-stat-sep {
-  color: var(--rk-text-dim);
-  font-size: 13px;
-  margin: 0 3px;
+  color: var(--rk-text-faint);
+  font-size: 14px;
+  margin: 0 4px;
   font-weight: 400;
 }
 
 .rk-stat-max {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--rk-text-muted);
   font-weight: 500;
 }
 
 .rk-progress {
-  height: 3px;
-  background: var(--rk-surface-2);
-  border-radius: 999px;
+  height: 2px;
+  background: var(--rk-bg-soft);
+  border-radius: 1px;
   overflow: hidden;
 }
 
 .rk-progress-fill {
   height: 100%;
-  background: var(--rk-accent);
-  border-radius: 999px;
+  background: var(--rk-positive);
   width: 0%;
-  transition: width 240ms ease;
+  border-radius: 1px;
+  transition: width 240ms ease, background 240ms ease;
 }
 
-/* ─── Field row (label + control) ─────────────────────────────────────── */
+.rk-progress-fill.warning {
+  background: var(--rk-warning);
+}
+
+.rk-progress-fill.critical {
+  background: var(--rk-critical);
+}
+
+/* ─── Field row (label + control) ─────────────────────────────────────────── */
 
 .rk-field {
   display: flex;
@@ -289,19 +324,19 @@ body.rk-popup {
   cursor: pointer;
 }
 
-/* ─── Stepper ─────────────────────────────────────────────────────────── */
+/* ─── Stepper ─────────────────────────────────────────────────────────────── */
 
 .rk-stepper {
   display: inline-flex;
   align-items: stretch;
-  background: var(--rk-surface);
-  border: 1px solid var(--rk-border-strong);
+  border: 1px solid var(--rk-border);
   border-radius: var(--rk-radius);
   overflow: hidden;
+  background: transparent;
 }
 
 .rk-stepper-btn {
-  width: 28px;
+  width: 26px;
   background: transparent;
   border: 0;
   color: var(--rk-text-muted);
@@ -314,7 +349,7 @@ body.rk-popup {
 }
 
 .rk-stepper-btn:hover:not(:disabled) {
-  background: var(--rk-surface-2);
+  background: var(--rk-bg-soft);
   color: var(--rk-text);
 }
 
@@ -329,16 +364,16 @@ body.rk-popup {
 }
 
 .rk-stepper input {
-  width: 44px;
+  width: 42px;
   border: 0;
   border-left: 1px solid var(--rk-border);
   border-right: 1px solid var(--rk-border);
   background: transparent;
   color: var(--rk-text);
   text-align: center;
+  font-family: var(--rk-serif);
   font-size: var(--rk-fz-13);
   font-weight: 500;
-  font-family: inherit;
   font-variant-numeric: tabular-nums;
   -moz-appearance: textfield;
   padding: 0;
@@ -351,7 +386,7 @@ body.rk-popup {
 }
 
 .rk-stepper input:disabled {
-  color: var(--rk-text-dim);
+  color: var(--rk-text-faint);
 }
 
 .rk-stepper input:focus-visible {
@@ -359,7 +394,95 @@ body.rk-popup {
   outline-offset: -2px;
 }
 
-/* ─── Toggle rows ─────────────────────────────────────────────────────── */
+/* ─── Disclosure (expand / collapse) ──────────────────────────────────────── */
+
+.rk-disclose {
+  /* native <details> — fully accessible by default */
+}
+
+.rk-disclose-head {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--rk-radius-sm);
+  transition: color 120ms ease;
+}
+
+.rk-disclose-head::-webkit-details-marker {
+  display: none;
+}
+
+.rk-disclose-head::marker {
+  display: none;
+  content: "";
+}
+
+.rk-disclose-head:hover {
+  color: var(--rk-accent);
+}
+
+.rk-disclose-head:hover .rk-section-title {
+  color: var(--rk-accent);
+}
+
+.rk-disclose-head .rk-section-title {
+  margin-bottom: 0;
+  transition: color 120ms ease;
+}
+
+.rk-disclose-icon {
+  flex-shrink: 0;
+  color: var(--rk-text-dim);
+  transition: transform 200ms ease, color 120ms ease;
+}
+
+.rk-disclose-head:hover .rk-disclose-icon {
+  color: var(--rk-accent);
+}
+
+details[open] .rk-disclose-icon {
+  transform: rotate(180deg);
+  color: var(--rk-accent);
+}
+
+.rk-disclose-head:focus-visible {
+  outline: 2px solid var(--rk-accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.rk-disclose-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.25s ease, opacity 0.18s ease;
+}
+
+.rk-disclose-body > * {
+  overflow: hidden;
+  min-height: 0;
+}
+
+details[open] .rk-disclose-body {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.rk-disclose-body .rk-section-desc {
+  margin-top: 10px;
+}
+
+.rk-disclose-body .rk-options {
+  margin-top: 4px;
+}
+
+/* ─── Toggle rows ─────────────────────────────────────────────────────────── */
 
 .rk-options {
   display: flex;
@@ -416,9 +539,9 @@ body.rk-popup {
   position: relative;
   display: inline-block;
   flex-shrink: 0;
-  width: 32px;
-  height: 18px;
-  background: var(--rk-surface-2);
+  width: 30px;
+  height: 17px;
+  background: var(--rk-bg-soft);
   border: 1px solid var(--rk-border-strong);
   border-radius: 999px;
   transition: background 160ms ease, border-color 160ms ease;
@@ -429,9 +552,9 @@ body.rk-popup {
   position: absolute;
   top: 1px;
   left: 1px;
-  width: 14px;
-  height: 14px;
-  background: var(--rk-text-muted);
+  width: 13px;
+  height: 13px;
+  background: var(--rk-text-faint);
   border-radius: 50%;
   transition: transform 160ms ease, background 160ms ease;
 }
@@ -442,8 +565,8 @@ body.rk-popup {
 }
 
 .rk-toggle-input:checked ~ .rk-toggle::after {
-  transform: translateX(14px);
-  background: var(--rk-text);
+  transform: translateX(13px);
+  background: var(--rk-bg-page);
 }
 
 .rk-toggle-input:focus-visible ~ .rk-toggle {
@@ -451,32 +574,32 @@ body.rk-popup {
   outline-offset: 2px;
 }
 
-/* ─── Footer / actions ────────────────────────────────────────────────── */
+/* ─── Footer / actions ────────────────────────────────────────────────────── */
 
 .rk-section-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 14px 18px;
 }
 
 .rk-btn-primary {
-  background: var(--rk-accent);
-  color: var(--rk-text);
+  background: var(--rk-text);
+  color: var(--rk-bg-page);
   border: 0;
   border-radius: var(--rk-radius);
-  padding: 7px 14px;
+  padding: 7px 16px;
   font-size: var(--rk-fz-13);
   font-weight: 500;
   cursor: pointer;
-  transition: background 120ms ease, transform 60ms ease;
-  font-family: inherit;
+  transition: opacity 120ms ease, transform 60ms ease;
+  font-family: var(--rk-sans);
   letter-spacing: 0.01em;
 }
 
 .rk-btn-primary:hover {
-  background: var(--rk-accent-hover);
+  opacity: 0.85;
 }
 
 .rk-btn-primary:active {
@@ -484,19 +607,15 @@ body.rk-popup {
 }
 
 .rk-btn-primary:focus-visible {
-  outline: 2px solid var(--rk-text);
+  outline: 2px solid var(--rk-accent);
   outline-offset: 2px;
 }
 
 .rk-status {
   font-size: var(--rk-fz-12);
   color: var(--rk-text-muted);
-  font-style: normal;
+  font-style: italic;
   min-width: 50px;
   text-align: right;
   transition: opacity 200ms ease;
-}
-
-.rk-status.rk-status-show {
-  opacity: 1;
 }
