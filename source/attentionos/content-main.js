@@ -215,6 +215,12 @@ async function _handleMessage(message) {
       );
       return { ok: true };
 
+    // ── Pattern-based interventions (banners/reminders) ───────────
+    case 'AOS_INTERVENTIONS':
+      // Log only for now; future phases will add banner UI
+      console.log('[AttentionOS] Interventions:', message.payload.interventions);
+      return { ok: true };
+
     default:
       return { ok: false, error: 'unknown message type' };
   }

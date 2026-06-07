@@ -354,8 +354,22 @@ function _extractReelId(videoEl) {
     return _simpleHash(src);
   }
 
-  // Last resort — timestamp-based unique ID
-  return `unknown_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  // Last resort — use the closest <article> container identity, or a
+  // positional fingerprint from the DOM (avoids random-per-scroll).
+  const article = videoEl.closest('article');
+  if (article) {
+    // Use the article's position in the document + a short stable hash
+    // of its first 200 chars of innerHTML (changes on re-render, so
+    // dedup still works for the same article instance).
+    const allArticles = Array.from(document.querySelectorAll('article'));
+    const idx = allArticles.indexOf(article);
+    if (idx >= 0) {
+      const fingerprint = article.innerHTML.slice(0, 200);
+      return _simpleHash(`article:${idx}:${fingerprint}`);
+    }
+  }
+
+  return 'unknown_reel';
 }
 
 /**

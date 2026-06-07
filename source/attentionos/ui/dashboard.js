@@ -445,7 +445,7 @@ function _setupExport() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `attentionos-export-${todayUTC()}.json`;
+      a.download = `reelkill-export-${todayUTC()}.json`;
       a.click();
       URL.revokeObjectURL(url);
     });

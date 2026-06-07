@@ -142,6 +142,10 @@ async function onMessage(message, sender) {
       // Client-side timer detected hard block expiry
       return await _handleHardBlockExpiryFromClient();
 
+    case 'AOS_REELS_BLUR_EXPIRED':
+      // Client-side timer detected blur intervention expiry
+      return await _handleReelsBlurExpiredFromClient();
+
     case 'AOS_GET_STATUS':
       // Content script requesting current status
       return await _handleGetStatus();
@@ -361,6 +365,38 @@ async function _handleHardBlockExpiryFromClient() {
 
   if (result.expired) {
     await _broadcastToInstagramTabs({ type: 'AOS_REMOVE_BLOCK' });
+  }
+
+  return { ok: true };
+}
+
+async function _handleReelsBlurExpiredFromClient() {
+  // The reels-blur UI's own timer detected expiry.
+  // Check if the underlying state (cooldown/block) has also expired server-side
+  // and clean it up. If not expired, the next reel view will re-apply blur.
+  const state = await getState();
+
+  if (state.cooldown_active && state.cooldown_expires) {
+    if (new Date().toISOString() >= state.cooldown_expires) {
+      const result = await onCooldownExpiry();
+      if (result.expired && result.hardBlockTakeover) {
+        const s = await getState();
+        const settings = await getSettings();
+        await _broadcastToInstagramTabs({
+          type: 'AOS_SHOW_BLOCK',
+          payload: {
+            expires: s.hard_block_expires,
+            reelsWatched: s.reels_watched_today,
+            dailyLimit: settings.daily_limit,
+          },
+        });
+      }
+    }
+  } else if (state.hard_block_active && state.hard_block_expires) {
+    if (new Date().toISOString() >= state.hard_block_expires) {
+      await onHardBlockExpiry();
+      await _broadcastToInstagramTabs({ type: 'AOS_REMOVE_BLOCK' });
+    }
   }
 
   return { ok: true };

@@ -36,7 +36,10 @@
         "attentionos/analytics/heatmap.js",
         "attentionos/analytics/score.js",
         "attentionos/ui/reels-blur.js",
-        "attentionos/ui/friction-modal.js"
+        "attentionos/ui/friction-modal.js",
+        "attentionos/ui/dashboard.html",
+        "attentionos/ui/dashboard.js",
+        "attentionos/ui/dashboard.css"
       ],
       "matches": ["https://*.instagram.com/*", "https://instagram.com/*"]
     }
