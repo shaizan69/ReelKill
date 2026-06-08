@@ -142,11 +142,12 @@ a:hover {
   border: 0;
 }
 
-.brand-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .brand-name {
@@ -155,6 +156,10 @@ a:hover {
   font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--text-primary);
+}
+
+.brand-accent {
+  color: var(--accent);
 }
 
 .tabs {

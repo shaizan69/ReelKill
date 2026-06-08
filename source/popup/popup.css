@@ -72,12 +72,30 @@ body.rk-popup {
   border-bottom: 1px solid var(--rk-border);
 }
 
-.rk-title {
+.rk-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.rk-brand-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.rk-brand-name {
   font-family: var(--rk-serif);
   font-size: var(--rk-fz-15);
   font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--rk-text);
+}
+
+.rk-brand-accent {
+  color: var(--rk-accent);
 }
 
 .rk-icon-btn {

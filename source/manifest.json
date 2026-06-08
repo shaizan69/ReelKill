@@ -5,10 +5,10 @@
   "version": "2.1.1",
   "author": "aymyo",
   "icons": {
-    "16": "public/ag16.png",
-    "32": "public/ag32.png",
-    "48": "public/ag48.png",
-    "128": "public/ag128.png"
+    "16": "public/logo.png",
+    "32": "public/logo.png",
+    "48": "public/logo.png",
+    "128": "public/logo.png"
   },
 
   "permissions": ["storage", "alarms", "tabs"],
@@ -58,10 +58,10 @@
     "default_title": "ReelKill Options",
     "default_popup": "popup/popup.html",
     "default_icon": {
-      "16": "public/ag16.png",
-      "32": "public/ag32.png",
-      "48": "public/ag48.png",
-      "128": "public/ag128.png"
+      "16": "public/logo.png",
+      "32": "public/logo.png",
+      "48": "public/logo.png",
+      "128": "public/logo.png"
     }
   }
 }
