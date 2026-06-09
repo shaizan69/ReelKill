@@ -157,30 +157,43 @@ function _onMutation(mutations) {
 }
 
 /**
- * Scans a DOM subtree for reel video elements and registers them with
- * the IntersectionObserver.
- *
- * Instagram renders reels in several DOM patterns:
- *  - /reels/ page: <video> inside <div role="presentation"> or <article>
- *  - Stories-style reel viewer: <video> inside a scrollable container
- *
- * We target all <video> elements on /reels/* paths and observe them.
+ * Scans a DOM subtree for **actual reel** video elements and registers them
+ * with the IntersectionObserver.  Only videos that belong to a reel context
+ * (article with a /reel/ link, anything on /reels/ page) are tracked.
+ * Regular posts, stories, and IGTV are ignored.
  */
 function _scanForReels(root) {
-  // We track <video> elements regardless of the URL path, 
-  // because Reels appear in the main feed, explore page, and /reels tab.
-  const videos = root.querySelectorAll
+  const candidates = root.querySelectorAll
     ? root.querySelectorAll('video')
     : [];
 
   // Also check if root itself is a video
   if (root.tagName === 'VIDEO') {
-    _observeVideo(root);
+    if (_isReelVideo(root)) _observeVideo(root);
   }
 
-  for (const video of videos) {
-    _observeVideo(video);
+  for (const video of candidates) {
+    if (_isReelVideo(video)) {
+      _observeVideo(video);
+    }
   }
+}
+
+/**
+ * Returns true if the <video> element is part of a reel.
+ * Matches the same logic used by reels-blur.js.
+ */
+function _isReelVideo(videoEl) {
+  // On the dedicated /reels/* page, every visible video is a reel
+  const path = window.location.pathname;
+  if (path.startsWith('/reels')) return true;
+
+  // On the feed / explore, the video must live inside an <article>
+  // that links to /reel/…
+  const article = videoEl.closest('article');
+  if (!article) return false;
+
+  return article.querySelector('a[href*="/reel"]') !== null;
 }
 
 /**

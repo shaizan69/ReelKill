@@ -30,18 +30,17 @@ import {
 // ─── Daily Limit Check ──────────────────────────────────────────────────────
 
 /**
- * Recounts reels watched in the last 24 hours from storage.
- * This is the single source of truth — never rely on an in-memory counter.
+ * Recounts reels watched since the start of the current UTC calendar day.
+ * Aligns with computeDailySummary() so the popup and dashboard show
+ * the same number.  The budget enforcer (hard block) still works
+ * because it checks this count on every reel view.
  *
- * Uses a simple rolling 24h window (`now - 24h` to `now`) regardless
- * of whether a hard block is active. This ensures events that triggered
- * the block are always counted, and the counter never resets mid-block.
- *
- * @returns {Promise<number>} Current reel count for the rolling window
+ * @returns {Promise<number>} Current reel count for today
  */
 async function recountReels() {
   const now = new Date();
-  const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const today = todayUTC();
+  const windowStart = new Date(`${today}T00:00:00.000Z`);
 
   const reelEvents = await getEventsInWindow(
     windowStart.toISOString(),

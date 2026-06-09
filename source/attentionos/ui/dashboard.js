@@ -105,7 +105,7 @@ async function _renderTodayPanel() {
 
   // ── Hero score ──
   const score = summary.attention_score || 0;
-  const showScore = hasTodayActivity || hasAnyHistory;
+  const showScore = summary.reels_watched > 0 && hasAnyHistory;
   _setScore(score, showScore);
 
   // ── Streak ──
@@ -307,7 +307,7 @@ function _renderWeeklyChart(days) {
     const group = document.createElement('div');
     group.className = 'chart-bar-group';
 
-    const hasScore = day.attention_score != null && (day.reels_watched > 0 || day.sessions > 0);
+    const hasScore = day.attention_score != null && day.reels_watched > 0;
     const score = hasScore ? day.attention_score : 0;
     const heightPct = (score / 100) * 100;
 
