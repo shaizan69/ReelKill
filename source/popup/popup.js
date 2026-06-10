@@ -85,16 +85,18 @@ const saveOptions = async () => {
     }
   }
 
+  let limitQueued = false;
   const limitInput = document.getElementById("aos-daily-limit");
   if (limitInput && !limitInput.disabled) {
     const newLimit = parseInt(limitInput.value, 10);
     if (Number.isFinite(newLimit) && newLimit > 0 && newLimit <= 50) {
-      await updateSettings({ daily_limit: newLimit });
+      const result = await updateSettings({ daily_limit: newLimit });
+      if (result.queued) limitQueued = true;
     }
   }
 
   chrome.storage.sync.set(options, () => {
-    showStatus("Saved");
+    showStatus(limitQueued ? "Saved — takes effect at next reset" : "Saved");
     loadAOSStats();
   });
 };

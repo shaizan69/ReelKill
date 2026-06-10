@@ -165,6 +165,9 @@ async function _handleReelViewed(eventPayload, senderTabId) {
   // Recount from storage (crash-safe)
   const reelsWatched = await recountReels();
 
+  // Apply pending settings if the session window has reset
+  await applyPendingSettings();
+
   // Update daily summary
   await updateDailySummary(today, {
     reels_watched: reelsWatched,

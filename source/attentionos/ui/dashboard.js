@@ -444,10 +444,9 @@ function _setupSettings() {
 
       const statusEl = document.getElementById('settings-status');
       if (statusEl) {
-        const parts = [];
-        if (Object.keys(result.applied).length > 0) parts.push('Applied immediately');
-        if (result.queued) parts.push('Some changes queued for 24h');
-        statusEl.textContent = parts.join(' · ') || 'No changes';
+        statusEl.textContent = result.queued
+          ? 'Changes take effect at next reset'
+          : 'No changes';
         setTimeout(() => { statusEl.textContent = ''; }, 4000);
       }
 

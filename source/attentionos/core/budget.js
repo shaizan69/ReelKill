@@ -30,17 +30,46 @@ import {
 // ─── Daily Limit Check ──────────────────────────────────────────────────────
 
 /**
- * Recounts reels watched since the start of the current UTC calendar day.
- * Aligns with computeDailySummary() so the popup and dashboard show
- * the same number.  The budget enforcer (hard block) still works
- * because it checks this count on every reel view.
+ * Recounts reels watched in the current 24-hour session window.
  *
- * @returns {Promise<number>} Current reel count for today
+ * The window is anchored to `block_day_start` in state — the timestamp of
+ * the first reel view in the current session.  When 24 hours have elapsed
+ * since that anchor, the window resets: counters clear, pending setting
+ * changes apply, and a new window starts on the next reel view.
+ *
+ * @returns {Promise<number>} Current reel count for the rolling 24h window
  */
 async function recountReels() {
   const now = new Date();
-  const today = todayUTC();
-  const windowStart = new Date(`${today}T00:00:00.000Z`);
+  const state = await getState();
+
+  let blockDayStart = state.block_day_start;
+
+  // First reel of a new session — anchor the window
+  if (!blockDayStart) {
+    blockDayStart = now.toISOString();
+    await updateState({ block_day_start: blockDayStart });
+  }
+
+  const windowStart = new Date(blockDayStart);
+  const windowEnd = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000);
+
+  // 24h window has expired — reset for the next session
+  if (now >= windowEnd) {
+    blockDayStart = now.toISOString();
+    await updateState({
+      block_day_start: blockDayStart,
+      reels_watched_today: 0,
+    });
+
+    // Apply any pending setting changes at the reset boundary
+    try {
+      const { applyPendingSettings } = await import('./storage.js');
+      await applyPendingSettings();
+    } catch (_) {}
+
+    return 0;
+  }
 
   const reelEvents = await getEventsInWindow(
     windowStart.toISOString(),

@@ -117,25 +117,28 @@ async function getSettings() {
 }
 
 /**
- * Updates settings with enforcement rules:
- *  - Tightening (lower limit, shorter window, longer cooldown) → immediate.
- *  - Loosening → queued with 24h delay.
- *  - daily_limit is hard-capped at 50.
- * 
+ * Updates settings. All changes are queued and take effect at the next
+ * 24-hour session reset (24h after the first reel was watched).
+ *
+ * If no session is active (block_day_start is null), changes apply
+ * immediately since there's no active session to protect.
+ *
+ * daily_limit is hard-capped at 50.
+ *
  * @param {Object} partial — key/value pairs to update
- * @returns {Promise<{applied: Object, queued: Object|null}>}
+ * @returns {Promise<{queued: Object|null}>}
  */
 async function updateSettings(partial) {
-  const data = await storageGet([KEYS.SETTINGS, KEYS.PENDING_SETTINGS]);
+  const data = await storageGet([KEYS.SETTINGS, KEYS.PENDING_SETTINGS, KEYS.STATE]);
   const current = data[KEYS.SETTINGS] || { ...DEFAULT_SETTINGS };
   const pending = data[KEYS.PENDING_SETTINGS] || null;
+  const state = data[KEYS.STATE] || {};
 
-  const applied = {};
   const queued = {};
   let hasQueued = false;
 
   for (const [key, value] of Object.entries(partial)) {
-    if (!(key in DEFAULT_SETTINGS)) continue; // Ignore unknown keys
+    if (!(key in DEFAULT_SETTINGS)) continue;
 
     let safeValue = value;
 
@@ -144,31 +147,30 @@ async function updateSettings(partial) {
       safeValue = Math.min(Math.max(1, Math.floor(safeValue)), 50);
     }
 
-    const isTightening = _isTightening(key, current[key], safeValue);
-
-    if (isTightening) {
-      applied[key] = safeValue;
-    } else if (safeValue !== current[key]) {
-      // Loosening — queue it
+    if (safeValue !== current[key]) {
       queued[key] = safeValue;
       hasQueued = true;
     }
   }
 
-  const updates = {};
-
-  // Apply tightened settings immediately
-  if (Object.keys(applied).length > 0) {
-    updates[KEYS.SETTINGS] = { ...current, ...applied };
+  if (!hasQueued) {
+    return { queued: null };
   }
 
-  // Queue loosened settings
-  if (hasQueued) {
-    const appliesAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const updates = {};
+
+  if (state.block_day_start) {
+    // Session active — queue changes to apply at next reset
+    const windowEnd = new Date(
+      new Date(state.block_day_start).getTime() + 24 * 60 * 60 * 1000
+    );
     updates[KEYS.PENDING_SETTINGS] = {
       changes: { ...(pending?.changes || {}), ...queued },
-      applies_at: appliesAt,
+      applies_at: windowEnd.toISOString(),
     };
+  } else {
+    // No active session — apply immediately
+    updates[KEYS.SETTINGS] = { ...current, ...queued };
   }
 
   if (Object.keys(updates).length > 0) {
@@ -176,24 +178,44 @@ async function updateSettings(partial) {
   }
 
   return {
-    applied,
     queued: hasQueued ? queued : null,
   };
 }
 
 /**
- * Applies any pending (loosened) settings whose 24h delay has elapsed.
- * Called by the service worker on alarm ticks.
+ * Applies pending settings if the current 24h session window has reset.
+ *
+ * The reset is detected by checking if `block_day_start` has moved past
+ * the `applies_at` timestamp — meaning a new session started after the
+ * pending changes were queued.
+ *
+ * Also falls back to a time-based check (now >= applies_at) for the case
+ * where block_day_start was cleared (e.g. hard block expiry).
+ *
  * @returns {Promise<boolean>} true if settings were applied
  */
 async function applyPendingSettings() {
-  const data = await storageGet([KEYS.SETTINGS, KEYS.PENDING_SETTINGS]);
+  const data = await storageGet([KEYS.SETTINGS, KEYS.PENDING_SETTINGS, KEYS.STATE]);
   const pending = data[KEYS.PENDING_SETTINGS];
+  const state = data[KEYS.STATE] || {};
 
   if (!pending || !pending.applies_at) return false;
 
-  const now = new Date().toISOString();
-  if (now < pending.applies_at) return false;
+  const appliesAt = new Date(pending.applies_at);
+  const now = new Date();
+
+  let shouldApply = false;
+
+  if (state.block_day_start) {
+    // Session active — apply if the current window started AFTER the target time
+    const windowStart = new Date(state.block_day_start);
+    shouldApply = windowStart >= appliesAt;
+  } else {
+    // No active session — apply if the target time has passed
+    shouldApply = now >= appliesAt;
+  }
+
+  if (!shouldApply) return false;
 
   const current = data[KEYS.SETTINGS] || { ...DEFAULT_SETTINGS };
   const merged = { ...current, ...pending.changes };
@@ -207,25 +229,6 @@ async function applyPendingSettings() {
   });
 
   return true;
-}
-
-/**
- * Determines if a settings change is "tightening" (more restrictive).
- * Tightening means: lower daily_limit, lower binge_threshold, shorter binge_window,
- * longer cooldown, lower friction threshold (trigger earlier).
- */
-function _isTightening(key, oldVal, newVal) {
-  switch (key) {
-    case 'daily_limit':
-    case 'binge_threshold_reels':
-    case 'binge_window_minutes':
-    case 'friction_threshold_pct':
-      return newVal < oldVal;
-    case 'cooldown_base_seconds':
-      return newVal > oldVal; // Longer cooldown = tighter
-    default:
-      return false;
-  }
 }
 
 // ─── State ───────────────────────────────────────────────────────────────────

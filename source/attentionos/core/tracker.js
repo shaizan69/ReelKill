@@ -1,14 +1,16 @@
 /**
  * AttentionOS — Reel Tracker
  *
- * Detects individual reel views on instagram.com/reels/* using a two-observer
- * architecture:
+ * Detects individual reel views on instagram.com/reels/* using a
+ * multi-signal architecture:
  *
  *  1. MutationObserver — watches for new reel containers entering the DOM.
- *  2. IntersectionObserver (threshold 0.5) — tracks viewport visibility.
+ *  2. IntersectionObserver (threshold 0.3) — tracks viewport visibility.
+ *  3. <video> playing event — fallback when IntersectionObserver doesn't fire.
  *
- * A reel counts as "watched" only when it has been ≥50% visible for ≥2 continuous
- * seconds. This filters out rapid scrolling and partial impressions.
+ * A reel counts as "watched" when it has been visible for ≥2 continuous
+ * seconds, triggered by either the intersection path or the playing-event path.
+ * This filters out rapid scrolling and partial impressions.
  *
  * Fires events to storage and notifies the service worker for budget/cooldown
  * checks after every confirmed view.
@@ -29,19 +31,17 @@ import {
 // ─── Configuration ───────────────────────────────────────────────────────────
 
 const VIEW_THRESHOLD_MS = 2000;     // 2 seconds of continuous visibility
-const INTERSECTION_RATIO = 0.5;     // 50% in viewport
+const INTERSECTION_RATIO = 0.3;     // 30% in viewport (more forgiving)
 const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes of inactivity → session end
 
 // ─── Module State ────────────────────────────────────────────────────────────
-// Kept in-memory per content-script lifetime. Survives SPA navigations but not
-// tab reloads (which is correct — service worker is the source of truth).
 
 let mutationObs = null;
 let intersectionObs = null;
-let trackedElements = new WeakMap();  // element → { timerId, entryTime, reelId }
-let seenReelIds = new Set();          // Prevent double-counting within a session
+let trackedElements = new WeakMap();  // element → { timerId, entryTime, reelId, counted, playingBound }
 let sessionTimeoutId = null;
 let isActive = false;
+let _idCounter = 0;                   // Monotonic fallback for reel IDs
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ async function startTracking() {
   // Scan existing DOM for reels already present
   _scanForReels(document);
 
-  console.log('[AttentionOS] Tracker started');
+  console.log('[RK] Tracker started');
 }
 
 /**
@@ -106,15 +106,23 @@ function stopTracking() {
     intersectionObs = null;
   }
 
-  // Clear any pending view timers
-  // (WeakMap entries will be GC'd when elements are removed)
+  // Clean up playing event listeners on tracked elements
+  trackedElements.forEach((meta, el) => {
+    if (meta.playingBound) {
+      el.removeEventListener('playing', meta.playingBound, true);
+    }
+    if (meta.timerId) {
+      clearTimeout(meta.timerId);
+    }
+  });
+  trackedElements = new WeakMap();
 
   if (sessionTimeoutId) {
     clearTimeout(sessionTimeoutId);
     sessionTimeoutId = null;
   }
 
-  console.log('[AttentionOS] Tracker stopped');
+  console.log('[RK] Tracker stopped');
 }
 
 /**
@@ -139,8 +147,6 @@ async function endSession() {
     current_session_start: null,
     friction_shown_this_session: false,
   });
-
-  seenReelIds.clear();
 }
 
 // ─── MutationObserver Callback ───────────────────────────────────────────────
@@ -157,10 +163,8 @@ function _onMutation(mutations) {
 }
 
 /**
- * Scans a DOM subtree for **actual reel** video elements and registers them
- * with the IntersectionObserver.  Only videos that belong to a reel context
- * (article with a /reel/ link, anything on /reels/ page) are tracked.
- * Regular posts, stories, and IGTV are ignored.
+ * Scans a DOM subtree for actual reel video elements and registers them
+ * with the IntersectionObserver + playing event listener.
  */
 function _scanForReels(root) {
   const candidates = root.querySelectorAll
@@ -189,7 +193,7 @@ function _isReelVideo(videoEl) {
   if (path.startsWith('/reels')) return true;
 
   // On the feed / explore, the video must live inside an <article>
-  // that links to /reel/…
+  // that links to /reel/
   const article = videoEl.closest('article');
   if (!article) return false;
 
@@ -197,8 +201,9 @@ function _isReelVideo(videoEl) {
 }
 
 /**
- * Registers a single video element with the IntersectionObserver.
- * Extracts the reel ID and stores metadata in the WeakMap.
+ * Registers a single video element with the IntersectionObserver
+ * and a playing-event fallback. Extracts the reel ID and stores
+ * metadata in the WeakMap.
  */
 function _observeVideo(videoEl) {
   if (!intersectionObs) return;
@@ -206,14 +211,32 @@ function _observeVideo(videoEl) {
 
   const reelId = _extractReelId(videoEl);
 
-  trackedElements.set(videoEl, {
+  const meta = {
     timerId: null,
     entryTime: null,
     reelId: reelId,
     counted: false,
-  });
+    playingBound: null,
+  };
 
+  trackedElements.set(videoEl, meta);
+
+  // Path A: IntersectionObserver
   intersectionObs.observe(videoEl);
+
+  // Path B: playing event fallback — catches reels the observer misses
+  const onPlaying = () => {
+    if (meta.counted || meta.timerId) return;
+    console.log(`[RK] playing event fired for ${reelId} — starting 2s timer`);
+    meta.entryTime = Date.now();
+    meta.timerId = setTimeout(() => {
+      _onReelViewed(videoEl, meta);
+    }, VIEW_THRESHOLD_MS);
+  };
+  meta.playingBound = onPlaying;
+  videoEl.addEventListener('playing', onPlaying, true);
+
+  console.log(`[RK] Tracking video: ${reelId}`);
 }
 
 // ─── IntersectionObserver Callback ───────────────────────────────────────────
@@ -221,11 +244,12 @@ function _observeVideo(videoEl) {
 function _onIntersection(entries) {
   for (const entry of entries) {
     const meta = trackedElements.get(entry.target);
-    if (!meta) continue;
+    if (!meta || meta.counted) continue;
 
     if (entry.isIntersecting && entry.intersectionRatio >= INTERSECTION_RATIO) {
-      // Reel entered viewport at ≥50% — start the 2-second timer
-      if (!meta.timerId && !meta.counted) {
+      // Reel entered viewport — start the 2-second timer
+      if (!meta.timerId) {
+        console.log(`[RK] Intersection ${Math.round(entry.intersectionRatio * 100)}% for ${meta.reelId} — starting 2s timer`);
         meta.entryTime = Date.now();
         meta.timerId = setTimeout(() => {
           _onReelViewed(entry.target, meta);
@@ -234,6 +258,7 @@ function _onIntersection(entries) {
     } else {
       // Reel left viewport — cancel pending timer
       if (meta.timerId) {
+        console.log(`[RK] ${meta.reelId} left viewport — cancelling timer`);
         clearTimeout(meta.timerId);
         meta.timerId = null;
         meta.entryTime = null;
@@ -249,12 +274,12 @@ async function _onReelViewed(videoEl, meta) {
   meta.counted = true;
   meta.timerId = null;
 
-  // Prevent double-counting same reel in this session
-  if (seenReelIds.has(meta.reelId)) return;
-  seenReelIds.add(meta.reelId);
+  // Clean up playing listener
+  if (meta.playingBound) {
+    videoEl.removeEventListener('playing', meta.playingBound, true);
+    meta.playingBound = null;
+  }
 
-  // Calculate watch duration — at minimum VIEW_THRESHOLD_MS,
-  // but could be longer if we add duration tracking later.
   const watchDuration = Math.round((Date.now() - meta.entryTime) / 1000) || 2;
 
   const state = await getState();
@@ -264,10 +289,9 @@ async function _onReelViewed(videoEl, meta) {
   let sessionId = state.current_session_id;
   if (!sessionId) {
     sessionId = generateSessionId();
-    const sessionStart = now;
     await updateState({
       current_session_id: sessionId,
-      current_session_start: sessionStart,
+      current_session_start: now,
     });
     await logEvent({
       event: 'session_start',
@@ -302,35 +326,35 @@ async function _onReelViewed(videoEl, meta) {
       payload: event,
     });
   } catch (err) {
-    // Service worker may be inactive; it will reconcile on next wake
-    console.warn('[AttentionOS] Failed to notify service worker:', err.message);
+    console.warn('[RK] Failed to notify service worker:', err.message);
   }
 
   // Reset session inactivity timeout
   _resetSessionTimeout();
 
-  console.log(`[AttentionOS] Reel viewed: ${meta.reelId} (${watchDuration}s)`);
+  console.log(`[RK] Reel counted: ${meta.reelId} (${watchDuration}s)`);
 }
 
 // ─── Reel ID Extraction ─────────────────────────────────────────────────────
 
 /**
  * Extracts a reel identifier from the DOM context around a video element.
- * Tries multiple strategies since Instagram's DOM changes frequently.
  *
- * Priority:
- *  1. URL path segment: /reels/<id>/
- *  2. Closest ancestor with a data attribute containing an ID
- *  3. Closest <a> linking to /reel/<id>/ or /reels/<id>/
- *  4. Video src hash (fallback — unique enough per reel)
+ * On /reels/ page: URL path is definitive (each page = one reel).
+ * On feed: tries article links and data attributes.
+ * Last resort: positional fingerprint (unique per DOM element).
  */
 function _extractReelId(videoEl) {
-  // Strategy 1: URL path
-  const pathMatch = window.location.pathname.match(/\/reels?\/([A-Za-z0-9_-]+)/);
+  const path = window.location.pathname;
+
+  // Strategy 1: URL path — definitive on /reels/ pages
+  const pathMatch = path.match(/\/reels?\/([A-Za-z0-9_-]+)/);
   if (pathMatch) {
-    // On the single-reel page, this is definitive.
-    // On the feed, multiple reels share the URL, so we still try other strategies.
-    // If there's only one video visible, use the URL.
+    // On /reels/ page, URL is always the right ID (each page = one reel)
+    if (path.startsWith('/reels')) {
+      return pathMatch[1];
+    }
+    // On feed, only use URL if there's a single video (avoid collisions)
     const allVideos = document.querySelectorAll('video');
     if (allVideos.length <= 1) {
       return pathMatch[1];
@@ -341,7 +365,7 @@ function _extractReelId(videoEl) {
   let ancestor = videoEl.closest('[data-media-id]');
   if (ancestor) return ancestor.getAttribute('data-media-id');
 
-  // Try aria-label or other identifying attributes on parent containers
+  // Strategy 3: Article container with reel link
   ancestor = videoEl.closest('article');
   if (ancestor) {
     const link = ancestor.querySelector('a[href*="/reel"]');
@@ -351,7 +375,7 @@ function _extractReelId(videoEl) {
     }
   }
 
-  // Strategy 3: Any nearby link to a reel
+  // Strategy 4: Any nearby link to a reel
   const parent = videoEl.parentElement;
   if (parent) {
     const link = parent.querySelector('a[href*="/reel"]');
@@ -361,28 +385,24 @@ function _extractReelId(videoEl) {
     }
   }
 
-  // Strategy 4: Fallback — hash of video src + position in DOM
+  // Strategy 5: Video src hash (blob URLs are unique per video)
   const src = videoEl.src || videoEl.querySelector('source')?.src || '';
   if (src) {
     return _simpleHash(src);
   }
 
-  // Last resort — use the closest <article> container identity, or a
-  // positional fingerprint from the DOM (avoids random-per-scroll).
-  const article = videoEl.closest('article');
-  if (article) {
-    // Use the article's position in the document + a short stable hash
-    // of its first 200 chars of innerHTML (changes on re-render, so
-    // dedup still works for the same article instance).
+  // Strategy 6: Article positional fingerprint
+  if (ancestor) {
     const allArticles = Array.from(document.querySelectorAll('article'));
-    const idx = allArticles.indexOf(article);
+    const idx = allArticles.indexOf(ancestor);
     if (idx >= 0) {
-      const fingerprint = article.innerHTML.slice(0, 200);
+      const fingerprint = ancestor.innerHTML.slice(0, 200);
       return _simpleHash(`article:${idx}:${fingerprint}`);
     }
   }
 
-  return 'unknown_reel';
+  // Last resort: monotonic counter — never returns the same ID twice
+  return 'reel_' + (++_idCounter);
 }
 
 /**
@@ -405,7 +425,7 @@ function _resetSessionTimeout() {
     clearTimeout(sessionTimeoutId);
   }
   sessionTimeoutId = setTimeout(async () => {
-    console.log('[AttentionOS] Session timeout — ending session');
+    console.log('[RK] Session timeout — ending session');
     await endSession();
 
     // Notify service worker
