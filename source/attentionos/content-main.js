@@ -42,8 +42,6 @@ async function init() {
   if (isInitialized) return;
   isInitialized = true;
 
-  console.log('[AttentionOS] Content main initializing...');
-
   await initialize();
 
   // Apply intervention if any is active. Hard block takes priority over cooldown.
@@ -66,7 +64,6 @@ async function init() {
   window.addEventListener('beforeunload', _onBeforeUnload);
   document.addEventListener('visibilitychange', _onVisibilityChange);
 
-  console.log('[AttentionOS] Content main ready');
 }
 
 // ─── Intervention Checks ─────────────────────────────────────────────────────
@@ -218,7 +215,6 @@ async function _handleMessage(message) {
     // ── Pattern-based interventions (banners/reminders) ───────────
     case 'AOS_INTERVENTIONS':
       // Log only for now; future phases will add banner UI
-      console.log('[AttentionOS] Interventions:', message.payload.interventions);
       return { ok: true };
 
     default:
@@ -244,9 +240,6 @@ function _registerTracker() {
         if (response?.assigned) {
           isTrackerActive = true;
           startTracking();
-          console.log('[AttentionOS] This tab is the active tracker');
-        } else {
-          console.log('[AttentionOS] Another tab is already tracking');
         }
       }
     );

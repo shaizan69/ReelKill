@@ -59,7 +59,6 @@ function showFrictionModal(reelsWatched, dailyLimit, onDismiss) {
     });
   }
 
-  console.log('[AttentionOS] Friction modal shown');
 }
 
 /**

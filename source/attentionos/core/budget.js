@@ -157,8 +157,6 @@ async function triggerHardBlock() {
     console.error('[AttentionOS] Failed to create hard block alarm:', err);
   }
 
-  console.log(`[AttentionOS] Hard block triggered. Expires at ${expiresAt}`);
-
   return { expires: expiresAt };
 }
 
@@ -200,8 +198,6 @@ async function onHardBlockExpiry() {
     cooldown_count_today: 0,
     friction_shown_this_session: false,
   });
-
-  console.log('[AttentionOS] Hard block expired. Counters reset.');
 
   return { expired: true };
 }

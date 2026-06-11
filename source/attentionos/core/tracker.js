@@ -86,7 +86,6 @@ async function startTracking() {
   // Scan existing DOM for reels already present
   _scanForReels(document);
 
-  console.log('[RK] Tracker started');
 }
 
 /**
@@ -122,7 +121,6 @@ function stopTracking() {
     sessionTimeoutId = null;
   }
 
-  console.log('[RK] Tracker stopped');
 }
 
 /**
@@ -227,7 +225,6 @@ function _observeVideo(videoEl) {
   // Path B: playing event fallback — catches reels the observer misses
   const onPlaying = () => {
     if (meta.counted || meta.timerId) return;
-    console.log(`[RK] playing event fired for ${reelId} — starting 2s timer`);
     meta.entryTime = Date.now();
     meta.timerId = setTimeout(() => {
       _onReelViewed(videoEl, meta);
@@ -236,7 +233,6 @@ function _observeVideo(videoEl) {
   meta.playingBound = onPlaying;
   videoEl.addEventListener('playing', onPlaying, true);
 
-  console.log(`[RK] Tracking video: ${reelId}`);
 }
 
 // ─── IntersectionObserver Callback ───────────────────────────────────────────
@@ -249,7 +245,6 @@ function _onIntersection(entries) {
     if (entry.isIntersecting && entry.intersectionRatio >= INTERSECTION_RATIO) {
       // Reel entered viewport — start the 2-second timer
       if (!meta.timerId) {
-        console.log(`[RK] Intersection ${Math.round(entry.intersectionRatio * 100)}% for ${meta.reelId} — starting 2s timer`);
         meta.entryTime = Date.now();
         meta.timerId = setTimeout(() => {
           _onReelViewed(entry.target, meta);
@@ -258,7 +253,6 @@ function _onIntersection(entries) {
     } else {
       // Reel left viewport — cancel pending timer
       if (meta.timerId) {
-        console.log(`[RK] ${meta.reelId} left viewport — cancelling timer`);
         clearTimeout(meta.timerId);
         meta.timerId = null;
         meta.entryTime = null;
@@ -332,7 +326,7 @@ async function _onReelViewed(videoEl, meta) {
   // Reset session inactivity timeout
   _resetSessionTimeout();
 
-  console.log(`[RK] Reel counted: ${meta.reelId} (${watchDuration}s)`);
+
 }
 
 // ─── Reel ID Extraction ─────────────────────────────────────────────────────
@@ -425,7 +419,6 @@ function _resetSessionTimeout() {
     clearTimeout(sessionTimeoutId);
   }
   sessionTimeoutId = setTimeout(async () => {
-    console.log('[RK] Session timeout — ending session');
     await endSession();
 
     // Notify service worker

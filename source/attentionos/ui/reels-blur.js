@@ -48,7 +48,6 @@ function applyReelsBlur(newState) {
   _scanAndBlur();
   _startObserver();
 
-  console.log(`[AttentionOS] Reels blur applied (${newState.type})`);
 }
 
 /**
@@ -68,7 +67,6 @@ function removeReelsBlur() {
   const style = document.getElementById(STYLE_ID);
   if (style) style.remove();
 
-  console.log('[AttentionOS] Reels blur removed');
 }
 
 /**

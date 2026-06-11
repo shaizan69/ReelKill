@@ -67,9 +67,6 @@ async function onFrictionShown(reelsWatched, dailyLimit) {
     hour: currentLocalHour(),
   });
 
-  console.log(
-    `[AttentionOS] Friction shown: ${reelsWatched}/${dailyLimit} reels`
-  );
 }
 
 /**
@@ -86,7 +83,6 @@ async function onFrictionDismissed() {
     hour: currentLocalHour(),
   });
 
-  console.log('[AttentionOS] Friction dismissed — user chose to continue');
 }
 
 // ─── Exports ─────────────────────────────────────────────────────────────────

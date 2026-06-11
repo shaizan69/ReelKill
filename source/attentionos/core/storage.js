@@ -55,8 +55,15 @@ const DEFAULT_STATE = {
  * @returns {Promise<Object>}
  */
 function storageGet(keys) {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(keys, resolve);
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(keys, (result) => {
+      if (chrome.runtime.lastError) {
+        console.warn('[RK] storage.get failed:', chrome.runtime.lastError.message);
+        resolve({});
+        return;
+      }
+      resolve(result || {});
+    });
   });
 }
 
@@ -66,8 +73,13 @@ function storageGet(keys) {
  * @returns {Promise<void>}
  */
 function storageSet(data) {
-  return new Promise((resolve) => {
-    chrome.storage.local.set(data, resolve);
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set(data, () => {
+      if (chrome.runtime.lastError) {
+        console.warn('[RK] storage.set failed:', chrome.runtime.lastError.message);
+      }
+      resolve();
+    });
   });
 }
 

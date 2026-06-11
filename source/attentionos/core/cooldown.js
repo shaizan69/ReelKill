@@ -132,10 +132,6 @@ async function triggerCooldown() {
     console.error('[AttentionOS] Failed to create cooldown alarm:', err);
   }
 
-  console.log(
-    `[AttentionOS] Cooldown #${cooldownNumber} triggered: ${duration}s, expires at ${expiresAt}`
-  );
-
   return { duration, expires: expiresAt };
 }
 
@@ -183,10 +179,6 @@ async function onCooldownExpiry() {
   // (daily limit hit during cooldown → hard block activates now)
   const hardBlockTakeover = state.hard_block_active && state.hard_block_expires;
 
-  console.log(
-    `[AttentionOS] Cooldown expired. Hard block takeover: ${hardBlockTakeover}`
-  );
-
   return { expired: true, hardBlockTakeover };
 }
 
@@ -214,7 +206,6 @@ async function checkCooldownCountReset() {
     const state = await getState();
     if (state.cooldown_count_today > 0) {
       await updateState({ cooldown_count_today: 0 });
-      console.log('[AttentionOS] Cooldown count reset (no cooldowns in 24h)');
     }
   }
 }

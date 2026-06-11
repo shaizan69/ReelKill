@@ -28,10 +28,7 @@
         "attentionos/content-main.js",
         "attentionos/core/storage.js",
         "attentionos/core/tracker.js",
-        "attentionos/core/cooldown.js",
         "attentionos/core/budget.js",
-        "attentionos/core/friction.js",
-        "attentionos/core/intervention.js",
         "attentionos/analytics/aggregator.js",
         "attentionos/analytics/heatmap.js",
         "attentionos/analytics/score.js",
@@ -50,7 +47,7 @@
   },
 
   "options_ui": {
-    "page": "popup/popup.html",
+    "page": "attentionos/ui/dashboard.html",
     "open_in_tab": true
   },
 

@@ -33,22 +33,14 @@ let activeTrackerTabId = null;
  * Performs maintenance tasks.
  */
 async function onStartup() {
-  console.log('[AttentionOS SW] Starting up...');
-
   // Initialize storage with defaults (non-destructive)
   await initialize();
 
   // Prune events older than 30 days
-  const pruned = await pruneOldEvents();
-  if (pruned > 0) {
-    console.log(`[AttentionOS SW] Pruned ${pruned} old events`);
-  }
+  await pruneOldEvents();
 
   // Check if any pending settings should be applied
-  const settingsApplied = await applyPendingSettings();
-  if (settingsApplied) {
-    console.log('[AttentionOS SW] Applied pending settings');
-  }
+  await applyPendingSettings();
 
   // Reset cooldown count if no cooldowns in 24h
   await checkCooldownCountReset();
@@ -59,7 +51,6 @@ async function onStartup() {
   // Validate active block/cooldown state
   await _validateActiveState();
 
-  console.log('[AttentionOS SW] Startup complete');
 }
 
 /**
@@ -98,8 +89,6 @@ async function _validateActiveState() {
  * recurring alarm for maintenance.
  */
 async function onInstalled(details) {
-  console.log(`[AttentionOS SW] Installed (reason: ${details.reason})`);
-
   await initialize();
 
   // Set up a periodic alarm for maintenance (check pending settings, etc.)
@@ -186,7 +175,6 @@ async function _handleReelViewed(eventPayload, senderTabId) {
 
     if (state.cooldown_active) {
       // Hard block is set in state but UI deferred until cooldown expires
-      console.log('[AttentionOS SW] Hard block queued behind active cooldown');
     } else {
       // Show hard block immediately
       await _broadcastToInstagramTabs({
@@ -256,7 +244,6 @@ async function _handleReelViewed(eventPayload, senderTabId) {
   // 4. Check intervention patterns (non-blocking — returns descriptors)
   const interventionResult = await checkInterventions(eventPayload);
   if (interventionResult.interventions.length > 0) {
-    console.log('[AttentionOS SW] Interventions triggered:', interventionResult.interventions.map(i => i.type));
     // Deliver interventions to the sender tab
     // For now, log them. Phase 3 will add banner/notification UI.
     if (senderTabId) {
@@ -272,7 +259,7 @@ async function _handleReelViewed(eventPayload, senderTabId) {
 
 // ─── Tracker Registration ────────────────────────────────────────────────────
 
-function _handleTrackerRegister(tabId) {
+async function _handleTrackerRegister(tabId) {
   if (!tabId) return { assigned: false };
 
   if (activeTrackerTabId === null || activeTrackerTabId === tabId) {
@@ -281,13 +268,24 @@ function _handleTrackerRegister(tabId) {
   }
 
   // Check if the current tracker tab still exists
-  chrome.tabs.get(activeTrackerTabId, (tab) => {
-    if (chrome.runtime.lastError || !tab) {
+  try {
+    const tab = await new Promise((resolve) => {
+      chrome.tabs.get(activeTrackerTabId, (tab) => {
+        if (chrome.runtime.lastError) resolve(null);
+        else resolve(tab);
+      });
+    });
+
+    if (!tab) {
       // Previous tracker tab is gone — reassign
       activeTrackerTabId = tabId;
-      _sendToTab(tabId, { type: 'AOS_TRACKER_ASSIGNED' });
+      return { assigned: true };
     }
-  });
+  } catch (_) {
+    // tabs.get failed — reassign
+    activeTrackerTabId = tabId;
+    return { assigned: true };
+  }
 
   return { assigned: false };
 }
@@ -318,7 +316,6 @@ function _reassignTracker() {
       if (candidate && candidate.id !== activeTrackerTabId) {
         activeTrackerTabId = candidate.id;
         _sendToTab(candidate.id, { type: 'AOS_TRACKER_ASSIGNED' });
-        console.log(`[AttentionOS SW] Tracker reassigned to tab ${candidate.id}`);
       }
     }
   );
