@@ -1,0 +1,572 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "f02f7e64587b0eb5d6e88b4bdb574e18",
+    "entities": [
+      {
+        "tableName": "usage_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `eventType` TEXT NOT NULL, `appId` TEXT NOT NULL, `reelId` TEXT, `watchDuration` INTEGER, `timestamp` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `day` TEXT NOT NULL, `hour` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "eventType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appId",
+            "columnName": "appId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reelId",
+            "columnName": "reelId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "watchDuration",
+            "columnName": "watchDuration",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "day",
+            "columnName": "day",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hour",
+            "columnName": "hour",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_usage_events_appId_timestamp",
+            "unique": false,
+            "columnNames": [
+              "appId",
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usage_events_appId_timestamp` ON `${TABLE_NAME}` (`appId`, `timestamp`)"
+          },
+          {
+            "name": "index_usage_events_appId_day",
+            "unique": false,
+            "columnNames": [
+              "appId",
+              "day"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usage_events_appId_day` ON `${TABLE_NAME}` (`appId`, `day`)"
+          },
+          {
+            "name": "index_usage_events_eventType_timestamp",
+            "unique": false,
+            "columnNames": [
+              "eventType",
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usage_events_eventType_timestamp` ON `${TABLE_NAME}` (`eventType`, `timestamp`)"
+          },
+          {
+            "name": "index_usage_events_sessionId",
+            "unique": false,
+            "columnNames": [
+              "sessionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usage_events_sessionId` ON `${TABLE_NAME}` (`sessionId`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "daily_summaries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`day` TEXT NOT NULL, `appId` TEXT NOT NULL, `reelsWatched` INTEGER NOT NULL, `timeSpentSeconds` INTEGER NOT NULL, `sessions` INTEGER NOT NULL, `cooldownsTriggered` INTEGER NOT NULL, `hardBlockHit` INTEGER NOT NULL, `frictionShown` INTEGER NOT NULL, `frictionDismissed` INTEGER NOT NULL, `attentionScore` INTEGER NOT NULL, PRIMARY KEY(`day`, `appId`))",
+        "fields": [
+          {
+            "fieldPath": "day",
+            "columnName": "day",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appId",
+            "columnName": "appId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reelsWatched",
+            "columnName": "reelsWatched",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeSpentSeconds",
+            "columnName": "timeSpentSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessions",
+            "columnName": "sessions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cooldownsTriggered",
+            "columnName": "cooldownsTriggered",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hardBlockHit",
+            "columnName": "hardBlockHit",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frictionShown",
+            "columnName": "frictionShown",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frictionDismissed",
+            "columnName": "frictionDismissed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attentionScore",
+            "columnName": "attentionScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "day",
+            "appId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_daily_summaries_appId",
+            "unique": false,
+            "columnNames": [
+              "appId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_daily_summaries_appId` ON `${TABLE_NAME}` (`appId`)"
+          },
+          {
+            "name": "index_daily_summaries_day",
+            "unique": false,
+            "columnNames": [
+              "day"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_daily_summaries_day` ON `${TABLE_NAME}` (`day`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "app_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`appId` TEXT NOT NULL, `reelsWatchedToday` INTEGER NOT NULL, `cooldownActive` INTEGER NOT NULL, `cooldownExpires` TEXT, `cooldownCountToday` INTEGER NOT NULL, `cooldownCountWindowStart` TEXT, `hardBlockActive` INTEGER NOT NULL, `hardBlockExpires` TEXT, `currentSessionId` TEXT, `currentSessionStart` TEXT, `lastReelViewAt` TEXT, `frictionShownThisSession` INTEGER NOT NULL, `blockAnchorTimestamp` TEXT, PRIMARY KEY(`appId`))",
+        "fields": [
+          {
+            "fieldPath": "appId",
+            "columnName": "appId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reelsWatchedToday",
+            "columnName": "reelsWatchedToday",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cooldownActive",
+            "columnName": "cooldownActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cooldownExpires",
+            "columnName": "cooldownExpires",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cooldownCountToday",
+            "columnName": "cooldownCountToday",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cooldownCountWindowStart",
+            "columnName": "cooldownCountWindowStart",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hardBlockActive",
+            "columnName": "hardBlockActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hardBlockExpires",
+            "columnName": "hardBlockExpires",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "currentSessionId",
+            "columnName": "currentSessionId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "currentSessionStart",
+            "columnName": "currentSessionStart",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastReelViewAt",
+            "columnName": "lastReelViewAt",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "frictionShownThisSession",
+            "columnName": "frictionShownThisSession",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockAnchorTimestamp",
+            "columnName": "blockAnchorTimestamp",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "appId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "app_settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`appId` TEXT NOT NULL, `dailyLimit` INTEGER NOT NULL, `bingeThresholdReels` INTEGER NOT NULL, `bingeWindowMinutes` INTEGER NOT NULL, `cooldownBaseSeconds` INTEGER NOT NULL, `frictionThresholdPct` REAL NOT NULL, `blockReelsTab` INTEGER NOT NULL, `blockExplore` INTEGER NOT NULL, `blockStories` INTEGER NOT NULL, `blockSuggested` INTEGER NOT NULL, `allowReelsInDm` INTEGER NOT NULL, `antiScrollEnabled` INTEGER NOT NULL, `antiScrollSensitivity` TEXT NOT NULL, `scheduledBreakStart` TEXT, `scheduledBreakEnd` TEXT, `strictModeEnabled` INTEGER NOT NULL, `strictModePin` TEXT, `accountabilityPartnerEnabled` INTEGER NOT NULL, PRIMARY KEY(`appId`))",
+        "fields": [
+          {
+            "fieldPath": "appId",
+            "columnName": "appId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyLimit",
+            "columnName": "dailyLimit",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bingeThresholdReels",
+            "columnName": "bingeThresholdReels",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bingeWindowMinutes",
+            "columnName": "bingeWindowMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cooldownBaseSeconds",
+            "columnName": "cooldownBaseSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frictionThresholdPct",
+            "columnName": "frictionThresholdPct",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockReelsTab",
+            "columnName": "blockReelsTab",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockExplore",
+            "columnName": "blockExplore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockStories",
+            "columnName": "blockStories",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockSuggested",
+            "columnName": "blockSuggested",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allowReelsInDm",
+            "columnName": "allowReelsInDm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "antiScrollEnabled",
+            "columnName": "antiScrollEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "antiScrollSensitivity",
+            "columnName": "antiScrollSensitivity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledBreakStart",
+            "columnName": "scheduledBreakStart",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "scheduledBreakEnd",
+            "columnName": "scheduledBreakEnd",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "strictModeEnabled",
+            "columnName": "strictModeEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "strictModePin",
+            "columnName": "strictModePin",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "accountabilityPartnerEnabled",
+            "columnName": "accountabilityPartnerEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "appId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "pending_settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `appId` TEXT NOT NULL, `changesJson` TEXT NOT NULL, `appliesAt` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appId",
+            "columnName": "appId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "changesJson",
+            "columnName": "changesJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appliesAt",
+            "columnName": "appliesAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pending_settings_appId",
+            "unique": false,
+            "columnNames": [
+              "appId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_settings_appId` ON `${TABLE_NAME}` (`appId`)"
+          },
+          {
+            "name": "index_pending_settings_appliesAt",
+            "unique": false,
+            "columnNames": [
+              "appliesAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_settings_appliesAt` ON `${TABLE_NAME}` (`appliesAt`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "blocking_rules",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `appPackage` TEXT NOT NULL, `viewId` TEXT, `contentDescContains` TEXT, `action` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `addedAt` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appPackage",
+            "columnName": "appPackage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "viewId",
+            "columnName": "viewId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "contentDescContains",
+            "columnName": "contentDescContains",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "action",
+            "columnName": "action",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_blocking_rules_appPackage_isActive",
+            "unique": false,
+            "columnNames": [
+              "appPackage",
+              "isActive"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_blocking_rules_appPackage_isActive` ON `${TABLE_NAME}` (`appPackage`, `isActive`)"
+          },
+          {
+            "name": "index_blocking_rules_viewId",
+            "unique": false,
+            "columnNames": [
+              "viewId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_blocking_rules_viewId` ON `${TABLE_NAME}` (`viewId`)"
+          },
+          {
+            "name": "index_blocking_rules_contentDescContains",
+            "unique": false,
+            "columnNames": [
+              "contentDescContains"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_blocking_rules_contentDescContains` ON `${TABLE_NAME}` (`contentDescContains`)"
+          }
+        ],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f02f7e64587b0eb5d6e88b4bdb574e18')"
+    ]
+  }
+}

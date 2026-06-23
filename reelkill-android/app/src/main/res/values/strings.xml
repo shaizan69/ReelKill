@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ReelKill</string>
+    <string name="accessibility_service_description">ReelKill uses Accessibility to detect Instagram Reels, short-form feed surfaces, and rapid scrolling so it can enforce your local attention limits. ReelKill does not read messages, collect personal content, or send analytics off your device.</string>
+</resources>
