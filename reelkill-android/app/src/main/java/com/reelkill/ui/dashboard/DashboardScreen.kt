@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -91,13 +92,17 @@ fun DashboardScreen(
 
 @Composable
 private fun DashboardHeader() {
-    Column {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
             text = "ReelKill",
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Behavior intelligence for short-form feeds",
             style = MaterialTheme.typography.bodyMedium,
@@ -108,19 +113,23 @@ private fun DashboardHeader() {
 
 @Composable
 private fun TodayTab(state: DashboardState) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    ContentCard {
         EnforcementStatusCard(state)
+        HorizontalDivider(color = BorderHairline)
         ScoreAndBudgetCard(state)
+        HorizontalDivider(color = BorderHairline)
         StatsGrid(state)
+        HorizontalDivider(color = BorderHairline)
         HeatmapCard(state.hourlyHeatmap)
+        HorizontalDivider(color = BorderHairline)
         StreakCard(state)
     }
 }
 
 @Composable
 private fun WeekTab(state: DashboardState) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        SectionCard {
+    ContentCard {
+        SectionBlock {
             Eyebrow("THIS WEEK")
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -136,8 +145,10 @@ private fun WeekTab(state: DashboardState) {
                 MetricPill("Cooldowns", state.weekTotalCooldowns.toString(), Modifier.weight(1f))
             }
         }
+        HorizontalDivider(color = BorderHairline)
         WeekBars(state.weekSummaries)
-        SectionCard {
+        HorizontalDivider(color = BorderHairline)
+        SectionBlock {
             Eyebrow("DANGER WINDOW")
             Spacer(modifier = Modifier.height(8.dp))
             val busiestHour = state.hourlyHeatmap.indices.maxByOrNull { state.hourlyHeatmap[it] } ?: 0
@@ -157,8 +168,8 @@ private fun InsightsTab(state: DashboardState) {
     val budgetProgress = (state.reelsWatchedToday.toFloat() / state.dailyLimit.coerceAtLeast(1)).coerceIn(0f, 1f)
     val savedEstimateMinutes = ((state.dailyLimit - state.reelsWatchedToday).coerceAtLeast(0) * 2)
 
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        SectionCard {
+    ContentCard {
+        SectionBlock {
             Eyebrow("INSIGHT")
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -174,7 +185,8 @@ private fun InsightsTab(state: DashboardState) {
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        SectionCard {
+        HorizontalDivider(color = BorderHairline)
+        SectionBlock {
             Eyebrow("TIME SAVED")
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -185,7 +197,8 @@ private fun InsightsTab(state: DashboardState) {
             )
             Text("Estimated time protected against your remaining budget.", color = TextSecondary)
         }
-        SectionCard {
+        HorizontalDivider(color = BorderHairline)
+        SectionBlock {
             Eyebrow("PATTERNS TRACKED")
             Spacer(modifier = Modifier.height(10.dp))
             InsightLine("Rapid binge", "20+ reels in 15 min")
@@ -210,7 +223,7 @@ private fun EnforcementStatusCard(state: DashboardState) {
         else -> Positive
     }
 
-    SectionCard {
+    SectionBlock {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -243,7 +256,7 @@ private fun EnforcementStatusCard(state: DashboardState) {
 @Composable
 private fun ScoreAndBudgetCard(state: DashboardState) {
     val progress = (state.reelsWatchedToday.toFloat() / state.dailyLimit.coerceAtLeast(1)).coerceIn(0f, 1f)
-    SectionCard {
+    SectionBlock {
         Eyebrow("ATTENTION SCORE")
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -297,7 +310,7 @@ private fun StatsGrid(state: DashboardState) {
 
 @Composable
 private fun HeatmapCard(hourlyHeatmap: List<Int>) {
-    SectionCard {
+    SectionBlock {
         Eyebrow("24-HOUR HEATMAP")
         Spacer(modifier = Modifier.height(12.dp))
         val maxValue = hourlyHeatmap.maxOrNull()?.coerceAtLeast(1) ?: 1
@@ -328,7 +341,7 @@ private fun HeatmapCard(hourlyHeatmap: List<Int>) {
 
 @Composable
 private fun StreakCard(state: DashboardState) {
-    SectionCard {
+    SectionBlock {
         Eyebrow("STREAK")
         Spacer(modifier = Modifier.height(8.dp))
         val streak = state.streak
@@ -347,7 +360,7 @@ private fun StreakCard(state: DashboardState) {
 
 @Composable
 private fun WeekBars(summaries: List<DailySummary>) {
-    SectionCard {
+    SectionBlock {
         Eyebrow("7-DAY SCORE")
         Spacer(modifier = Modifier.height(12.dp))
         val maxScore = 100
@@ -383,14 +396,25 @@ private fun WeekBars(summaries: List<DailySummary>) {
     }
 }
 
+import androidx.compose.foundation.layout.ColumnScope
+
 @Composable
-private fun SectionCard(content: @Composable Column.() -> Unit) {
+private fun ContentCard(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(4.dp))
             .border(1.dp, BorderHairline, RoundedCornerShape(4.dp))
-            .padding(16.dp),
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        content = content
+    )
+}
+
+@Composable
+private fun SectionBlock(content: @Composable Column.() -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
         content = content
     )
 }
@@ -400,7 +424,6 @@ private fun MetricPill(label: String, value: String, modifier: Modifier = Modifi
     Column(
         modifier = modifier
             .background(AccentBg, RoundedCornerShape(4.dp))
-            .border(1.dp, BorderHairline, RoundedCornerShape(4.dp))
             .padding(12.dp)
     ) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = TextTertiary)
