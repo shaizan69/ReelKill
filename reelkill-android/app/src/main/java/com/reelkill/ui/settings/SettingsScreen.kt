@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,6 +73,12 @@ fun SettingsScreen(
                 text = "ScrollGuard controls plus ReelKill enforcement.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
+            )
+        }
+        item {
+            com.reelkill.ui.app.AppSelector(
+                selectedAppId = settings.appId,
+                onAppSelected = viewModel::selectApp
             )
         }
 
@@ -283,7 +290,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionCard(content: @Composable Column.() -> Unit) {
+private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

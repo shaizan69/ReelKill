@@ -10,16 +10,19 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val reelKillPreferences: com.reelkill.data.datastore.ReelKillPreferences
 ) : ViewModel() {
 
-    private val appId = AppIds.INSTAGRAM
-    private val _settings = MutableStateFlow(AppSettings.defaultFor(appId))
+    private val _settings = MutableStateFlow(AppSettings.defaultFor(AppIds.INSTAGRAM))
     val settings: StateFlow<AppSettings> = _settings
 
     private val _lastWriteMessage = MutableStateFlow<String?>(null)
@@ -27,9 +30,17 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            settingsRepository.observeSettings(appId).collect { currentSettings ->
-                _settings.update { currentSettings }
-            }
+            reelKillPreferences.selectedAppId
+                .flatMapLatest { appId -> settingsRepository.observeSettings(appId) }
+                .collect { currentSettings ->
+                    _settings.update { currentSettings }
+                }
+        }
+    }
+
+    fun selectApp(appId: String) {
+        viewModelScope.launch {
+            reelKillPreferences.setSelectedAppId(appId)
         }
     }
 

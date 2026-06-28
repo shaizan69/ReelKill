@@ -17,47 +17,55 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val stateRepository: StateRepository,
     private val settingsRepository: SettingsRepository,
     private val dailySummaryDao: DailySummaryDao,
     private val usageEventDao: UsageEventDao,
-    private val streakTracker: StreakTracker
+    private val streakTracker: StreakTracker,
+    private val reelKillPreferences: com.reelkill.data.datastore.ReelKillPreferences
 ) : ViewModel() {
 
-    private val appId = AppIds.INSTAGRAM
     private val _dashboardState = MutableStateFlow(DashboardState())
     val dashboardState: StateFlow<DashboardState> = _dashboardState
 
     init {
         viewModelScope.launch {
-            // Derive today's summary on-the-fly from events when DailySummary is empty
             val today = LocalDate.now().toString()
-            val weekSummaries = dailySummaryDao.getRange(
-                appId,
-                LocalDate.now().minusDays(6).toString(),
-                today
-            )
-            val eventsToday = usageEventDao.getForDay(appId, today)
-            val todaySummary = deriveSummaryFromEvents(eventsToday, appId, today)
+            val weekStart = LocalDate.now().minusDays(6).toString()
 
-            combine(
-                stateRepository.observeState(appId),
-                settingsRepository.observeSettings(appId),
-                streakTracker.observeStreak(appId)
-            ) { state, settings, streak ->
-                Triple(state, settings, streak)
-            }.collect { (state, settings, streak) ->
+            reelKillPreferences.selectedAppId.flatMapLatest { appId ->
+                combine(
+                    stateRepository.observeState(appId),
+                    settingsRepository.observeSettings(appId),
+                    streakTracker.observeStreak(appId),
+                    dailySummaryDao.observeRange(appId, weekStart, today),
+                    usageEventDao.observeForDay(appId, today)
+                ) { state, settings, streak, storedWeekSummaries, eventsToday ->
+                    DashboardInputs(appId, state, settings, streak, storedWeekSummaries, eventsToday)
+                }
+            }.collect { inputs ->
+                val appId = inputs.appId
+                val state = inputs.state
+                val settings = inputs.settings
+                val todaySummary = deriveSummaryFromEvents(inputs.eventsToday, appId, today)
+                val weekSummaries = (inputs.storedWeekSummaries.filterNot { it.day == today } + todaySummary)
+                    .sortedBy { it.day }
+                    .takeLast(7)
                 val hourlyBuckets = IntArray(24)
-                eventsToday.filter { it.eventType == UsageEvent.TYPE_REEL_VIEWED }
+                inputs.eventsToday.filter { it.eventType == UsageEvent.TYPE_REEL_VIEWED }
                     .forEach { if (it.hour in 0..23) hourlyBuckets[it.hour]++ }
 
                 _dashboardState.update { current ->
                     current.copy(
+                        selectedAppId = appId,
                         reelsWatchedToday = state.reelsWatchedToday,
                         dailyLimit = settings.dailyLimit,
                         cooldownsToday = state.cooldownCountToday,
@@ -65,7 +73,7 @@ class DashboardViewModel @Inject constructor(
                         hardBlockExpires = state.hardBlockExpires,
                         cooldownActive = state.cooldownActive,
                         cooldownExpires = state.cooldownExpires,
-                        streak = streak,
+                        streak = inputs.streak,
                         todayAttentionScore = todaySummary.attentionScore,
                         todayTimeSpentSeconds = todaySummary.timeSpentSeconds,
                         todaySessions = todaySummary.sessions,
@@ -77,6 +85,12 @@ class DashboardViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    fun selectApp(appId: String) {
+        viewModelScope.launch {
+            reelKillPreferences.setSelectedAppId(appId)
         }
     }
 
@@ -111,7 +125,17 @@ class DashboardViewModel @Inject constructor(
     }
 }
 
+private data class DashboardInputs(
+    val appId: String,
+    val state: com.reelkill.data.db.entity.AppState,
+    val settings: com.reelkill.data.db.entity.AppSettings,
+    val streak: com.reelkill.engine.StreakState,
+    val storedWeekSummaries: List<DailySummary>,
+    val eventsToday: List<UsageEvent>
+)
+
 data class DashboardState(
+    val selectedAppId: String = AppIds.INSTAGRAM,
     val reelsWatchedToday: Int = 0,
     val dailyLimit: Int = 30,
     val cooldownsToday: Int = 0,

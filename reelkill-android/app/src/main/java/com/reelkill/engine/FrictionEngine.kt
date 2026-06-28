@@ -10,6 +10,7 @@ import com.reelkill.data.db.entity.UsageEvent
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.ceil
@@ -31,7 +32,7 @@ class FrictionEngine @Inject constructor(
         return database.withTransaction {
             val state = appStateDao.get(appId) ?: AppState.initial(appId)
             val threshold = ceil(settings.dailyLimit * settings.frictionThresholdPct).toInt().coerceAtLeast(1)
-            val hardBlockLive = state.hardBlockActive && state.hardBlockExpires?.let { Instant.parse(it) }?.isAfter(now) == true
+            val hardBlockLive = state.hardBlockActive && state.hardBlockExpires.toInstantOrNull()?.isAfter(now) == true
             val shouldShow = !hardBlockLive &&
                 !state.frictionShownThisSession &&
                 state.reelsWatchedToday >= threshold
@@ -76,6 +77,15 @@ class FrictionEngine @Inject constructor(
             day = now.atZone(zoneId).toLocalDate().toString(),
             hour = now.atZone(zoneId).hour
         )
+    }
+
+    private fun String?.toInstantOrNull(): Instant? {
+        if (isNullOrBlank()) return null
+        return try {
+            Instant.parse(this)
+        } catch (_: DateTimeParseException) {
+            null
+        }
     }
 }
 

@@ -7,9 +7,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import androidx.room.withTransaction
 import com.reelkill.MainActivity
 import com.reelkill.R
@@ -34,7 +36,10 @@ import com.reelkill.engine.PatternDetector
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeParseException
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -62,7 +67,10 @@ class ReelKillForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification())
+        if (!promoteToForeground()) {
+            stopSelf()
+            return
+        }
         isRunning = true
     }
 
@@ -195,8 +203,22 @@ class ReelKillForegroundService : Service() {
         serviceScope.launch { enforceOnOpen(appId) }
     }
 
+    private fun handleScrollHealth(appId: String) {
+        Timber.d("Scroll health triggered for $appId")
+        overlayManager.showAntiScroll {
+            overlayManager.removeCurrentOverlay()
+        }
+    }
+
     private suspend fun enforceOnOpen(appId: String): Boolean {
         val settings = settingsRepository.getOrCreateSettings(appId)
+        scheduledBreakEndInstant(settings)?.let { expiresAt ->
+            overlayManager.showScheduledBreak(settings, expiresAt) {
+                handleCheckEnforcement(appId)
+            }
+            return true
+        }
+
         return when (val hardBlock = budgetEngine.refreshHardBlock(appId)) {
             is HardBlockStatus.Active -> {
                 overlayManager.showHardBlock(hardBlock.state, settings) { handleCheckEnforcement(appId) }
@@ -293,7 +315,42 @@ class ReelKillForegroundService : Service() {
             ruleId.contains("reels_tab") || ruleId.contains("reels_viewer") -> settings.blockReelsTab
             ruleId.contains("explore") -> settings.blockExplore
             ruleId.contains("stories") -> settings.blockStories
+            ruleId.contains("suggested") -> settings.blockSuggested
             else -> true
+        }
+    }
+
+    private fun scheduledBreakEndInstant(
+        settings: AppSettings,
+        now: ZonedDateTime = ZonedDateTime.now()
+    ): Instant? {
+        val start = settings.scheduledBreakStart.toLocalTimeOrNull() ?: return null
+        val end = settings.scheduledBreakEnd.toLocalTimeOrNull() ?: return null
+        if (start == end) return null
+
+        val localTime = now.toLocalTime()
+        val crossesMidnight = start.isAfter(end)
+        val active = if (crossesMidnight) {
+            !localTime.isBefore(start) || localTime.isBefore(end)
+        } else {
+            !localTime.isBefore(start) && localTime.isBefore(end)
+        }
+        if (!active) return null
+
+        val endDate = when {
+            !crossesMidnight -> now.toLocalDate()
+            !localTime.isBefore(start) -> now.toLocalDate().plusDays(1)
+            else -> now.toLocalDate()
+        }
+        return end.atDate(endDate).atZone(now.zone).toInstant()
+    }
+
+    private fun String?.toLocalTimeOrNull(): LocalTime? {
+        if (isNullOrBlank()) return null
+        return try {
+            LocalTime.parse(this)
+        } catch (_: DateTimeParseException) {
+            null
         }
     }
 
@@ -335,14 +392,36 @@ class ReelKillForegroundService : Service() {
             .build()
     }
 
+    private fun promoteToForeground(): Boolean {
+        val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else {
+            0
+        }
+
+        return runCatching {
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                buildNotification(),
+                foregroundServiceType
+            )
+        }.onFailure { error ->
+            Timber.e(error, "Failed to start ReelKill foreground service")
+        }.isSuccess
+    }
+
     companion object {
         const val ACTION_START_MONITORING = "com.reelkill.action.START_MONITORING"
+        const val ACTION_APP_FOREGROUND = "com.reelkill.action.APP_FOREGROUND"
+        const val ACTION_APP_BACKGROUND = "com.reelkill.action.APP_BACKGROUND"
         const val ACTION_INSTAGRAM_FOREGROUND = "com.reelkill.action.INSTAGRAM_FOREGROUND"
         const val ACTION_INSTAGRAM_BACKGROUND = "com.reelkill.action.INSTAGRAM_BACKGROUND"
         const val ACTION_RULE_MATCHED = "com.reelkill.action.RULE_MATCHED"
         const val ACTION_REEL_VIEWED = "com.reelkill.action.REEL_VIEWED"
         const val ACTION_FRICTION_DISMISSED = "com.reelkill.action.FRICTION_DISMISSED"
         const val ACTION_CHECK_ENFORCEMENT = "com.reelkill.action.CHECK_ENFORCEMENT"
+        const val ACTION_SCROLL_HEALTH = "com.reelkill.action.SCROLL_HEALTH"
 
         const val EXTRA_APP_ID = "extra_app_id"
         const val EXTRA_RULE_ID = "extra_rule_id"
@@ -360,10 +439,16 @@ class ReelKillForegroundService : Service() {
             val intent = Intent(context, ReelKillForegroundService::class.java).apply {
                 action = ACTION_START_MONITORING
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            runCatching {
+                if (isRunning) {
+                    context.startService(intent)
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            }.onFailure { error ->
+                Timber.e(error, "Failed to request ReelKill foreground service start")
             }
         }
     }

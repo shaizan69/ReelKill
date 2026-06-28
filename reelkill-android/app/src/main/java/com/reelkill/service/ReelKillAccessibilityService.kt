@@ -2,6 +2,7 @@ package com.reelkill.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.content.ContextCompat
@@ -20,10 +21,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @AndroidEntryPoint
 class ReelKillAccessibilityService : AccessibilityService() {
     @Inject lateinit var blockingRuleDao: BlockingRuleDao
@@ -33,13 +39,22 @@ class ReelKillAccessibilityService : AccessibilityService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     @Volatile private var activeRules: List<BlockingRule> = emptyList()
-    private var foregroundAppPackage: String? = null
+    private val foregroundPackageFlow = MutableStateFlow<String?>(null)
+    private var foregroundAppPackage: String?
+        get() = foregroundPackageFlow.value
+        set(value) {
+            foregroundPackageFlow.value = value
+        }
+    private val lastRuleDispatchAt = mutableMapOf<String, Long>()
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         currentService = WeakReference(this)
         serviceScope.launch {
-            blockingRuleDao.observeActive()
+            foregroundPackageFlow
+                .filterNotNull()
+                .distinctUntilChanged()
+                .flatMapLatest { pkg -> blockingRuleDao.observeActiveForPackage(pkg) }
                 .catch { error -> Timber.e(error, "Failed to observe blocking rules") }
                 .collect { rules -> activeRules = rules }
         }
@@ -68,6 +83,7 @@ class ReelKillAccessibilityService : AccessibilityService() {
         }
 
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+            reelTracker.reset()
             handleScrollEvent(packageName)
             return
         }
@@ -81,10 +97,13 @@ class ReelKillAccessibilityService : AccessibilityService() {
         val root = rootInActiveWindow ?: return
         val matchedRule = findFirstMatchingRule(root, activeRules)
         if (matchedRule != null) {
-            sendRuleMatched(matchedRule)
+            if (matchedRule.rule.action == BlockingRule.ACTION_HIDE) {
+                tryDismissNode(matchedRule.node)
+            }
+            sendRuleMatched(matchedRule.rule)
         }
 
-        if (matchedRule?.id?.contains("reels_viewer") == true || containsReelsViewer(root)) {
+        if (matchedRule?.rule?.id?.contains("reels_viewer") == true || containsReelsViewer(root)) {
             val confirmed = reelTracker.onReelCandidateVisible(extractReelId(root))
             if (confirmed != null) {
                 sendReelViewed(packageName, confirmed.reelId, confirmed.watchDurationSeconds)
@@ -99,6 +118,7 @@ class ReelKillAccessibilityService : AccessibilityService() {
             val settings = settingsRepository.getOrCreateSettings(packageName)
             when (antiScrollEngine.recordSwipeUp(settings)) {
                 is AntiScrollDecision.ShowPopup -> {
+                    antiScrollEngine.suppressForOneMinute()
                     sendToForegroundService(
                         action = ReelKillForegroundService.ACTION_SCROLL_HEALTH,
                         appId = packageName
@@ -119,24 +139,44 @@ class ReelKillAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    private fun findFirstMatchingRule(root: AccessibilityNodeInfo, rules: List<BlockingRule>): BlockingRule? {
+    private fun findFirstMatchingRule(root: AccessibilityNodeInfo, rules: List<BlockingRule>): RuleMatch? {
         val nodes = ArrayDeque<AccessibilityNodeInfo>()
         nodes.add(root)
         while (nodes.isNotEmpty()) {
             val node = nodes.removeFirst()
-            val viewId = node.viewIdResourceName
-            val description = node.contentDescription?.toString()?.lowercase()
 
-            rules.firstOrNull { rule ->
-                (rule.viewId != null && rule.viewId == viewId) ||
-                    (rule.contentDescContains != null && description?.contains(rule.contentDescContains.lowercase()) == true)
-            }?.let { return it }
+            rules.firstOrNull { rule -> nodeMatchesRule(node, rule) && isActionableMatch(node, rule) }
+                ?.let { return RuleMatch(it, node) }
 
             for (index in 0 until node.childCount) {
                 node.getChild(index)?.let { nodes.add(it) }
             }
         }
         return null
+    }
+
+    private fun tryDismissNode(node: AccessibilityNodeInfo) {
+        runCatching {
+            node.performAction(AccessibilityNodeInfo.ACTION_DISMISS)
+        }.onFailure { error ->
+            Timber.d(error, "Unable to dismiss matched accessibility node")
+        }
+    }
+
+    private fun nodeMatchesRule(node: AccessibilityNodeInfo, rule: BlockingRule): Boolean {
+        val viewId = node.viewIdResourceName
+        val description = node.contentDescription?.toString()?.lowercase()
+        return (rule.viewId != null && rule.viewId == viewId) ||
+            (rule.contentDescContains != null && description?.contains(rule.contentDescContains.lowercase()) == true)
+    }
+
+    private fun isActionableMatch(node: AccessibilityNodeInfo, rule: BlockingRule): Boolean {
+        if (rule.action != BlockingRule.ACTION_BACK) return true
+        if (rule.id.contains("reels_viewer")) return true
+        if (rule.id.contains("reels_tab") || rule.id.contains("explore_tab")) {
+            return node.isSelected
+        }
+        return true
     }
 
     private fun containsReelsViewer(root: AccessibilityNodeInfo): Boolean {
@@ -165,6 +205,7 @@ class ReelKillAccessibilityService : AccessibilityService() {
     }
 
     private fun sendRuleMatched(rule: BlockingRule) {
+        if (!shouldDispatchRule(rule.id)) return
         sendToForegroundService(
             action = ReelKillForegroundService.ACTION_RULE_MATCHED,
             appId = rule.appPackage,
@@ -182,7 +223,7 @@ class ReelKillAccessibilityService : AccessibilityService() {
             putExtra(ReelKillForegroundService.EXTRA_WATCH_DURATION_SECONDS, watchDurationSeconds)
             if (reelId != null) putExtra(ReelKillForegroundService.EXTRA_REEL_ID, reelId)
         }
-        ContextCompat.startForegroundService(this, intent)
+        dispatchToForegroundService(intent)
     }
 
     private fun sendToForegroundService(
@@ -195,10 +236,31 @@ class ReelKillAccessibilityService : AccessibilityService() {
             putExtra(ReelKillForegroundService.EXTRA_APP_ID, appId)
             extras.forEach { (key, value) -> putExtra(key, value) }
         }
-        ContextCompat.startForegroundService(this, intent)
+        dispatchToForegroundService(intent)
+    }
+
+    private fun dispatchToForegroundService(intent: Intent) {
+        runCatching {
+            if (ReelKillForegroundService.isRunning) {
+                startService(intent)
+            } else {
+                ContextCompat.startForegroundService(this, intent)
+            }
+        }.onFailure { error ->
+            Timber.e(error, "Failed to dispatch ${intent.action} to foreground service")
+        }
+    }
+
+    private fun shouldDispatchRule(ruleId: String): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        val last = lastRuleDispatchAt[ruleId] ?: 0L
+        if (now - last < RULE_DISPATCH_DEBOUNCE_MS) return false
+        lastRuleDispatchAt[ruleId] = now
+        return true
     }
 
     companion object {
+        private const val RULE_DISPATCH_DEBOUNCE_MS = 1_200L
         private var currentService: WeakReference<ReelKillAccessibilityService>? = null
 
         fun requestGlobalBackFromForegroundService(): Boolean {
@@ -206,4 +268,9 @@ class ReelKillAccessibilityService : AccessibilityService() {
             return service.performGlobalAction(GLOBAL_ACTION_BACK)
         }
     }
+
+    private data class RuleMatch(
+        val rule: BlockingRule,
+        val node: AccessibilityNodeInfo
+    )
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,13 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,16 +45,15 @@ import com.reelkill.ui.theme.Positive
 import com.reelkill.ui.theme.TextSecondary
 import com.reelkill.ui.theme.TextTertiary
 import com.reelkill.ui.theme.Warning
-import java.time.LocalDate
 import kotlin.math.roundToInt
 
 @Composable
 fun DashboardScreen(
     modifier: Modifier = Modifier,
-    viewModel: DashboardViewModel = hiltViewModel()
+    viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.dashboardState.collectAsState()
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Today", "Week", "Insights")
 
     LazyColumn(
@@ -66,6 +65,12 @@ fun DashboardScreen(
     ) {
         item { Spacer(modifier = Modifier.height(10.dp)) }
         item { DashboardHeader() }
+        item {
+            com.reelkill.ui.app.AppSelector(
+                selectedAppId = state.selectedAppId,
+                onAppSelected = viewModel::selectApp
+            )
+        }
         item {
             TabRow(
                 selectedTabIndex = selectedTab,
@@ -133,7 +138,7 @@ private fun WeekTab(state: DashboardState) {
             Eyebrow("THIS WEEK")
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${state.weekAvgScore}",
+                text = state.weekAvgScore.toString(),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
                 color = Accent
@@ -320,7 +325,7 @@ private fun HeatmapCard(hourlyHeatmap: List<Int>) {
             verticalAlignment = Alignment.Bottom
         ) {
             hourlyHeatmap.take(24).forEach { value ->
-                val height = (8 + (value.toFloat() / maxValue * 54)).roundToInt().dp
+                val height = (8 + ((value.toFloat() / maxValue) * 54)).roundToInt().dp
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -396,8 +401,6 @@ private fun WeekBars(summaries: List<DailySummary>) {
     }
 }
 
-import androidx.compose.foundation.layout.ColumnScope
-
 @Composable
 private fun ContentCard(content: @Composable ColumnScope.() -> Unit) {
     Column(
@@ -412,7 +415,7 @@ private fun ContentCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun SectionBlock(content: @Composable Column.() -> Unit) {
+private fun SectionBlock(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         content = content

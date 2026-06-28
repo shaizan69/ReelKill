@@ -26,6 +26,13 @@ object ReelKillWorkScheduler {
                 .build()
         )
         workManager.enqueueUniquePeriodicWork(
+            ScheduledBreakWorker.UNIQUE_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            PeriodicWorkRequestBuilder<ScheduledBreakWorker>(15, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, Duration.ofMinutes(5))
+                .build()
+        )
+        workManager.enqueueUniquePeriodicWork(
             EventPruningWorker.UNIQUE_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,
             PeriodicWorkRequestBuilder<EventPruningWorker>(1, TimeUnit.DAYS)
