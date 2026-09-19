@@ -34,7 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.reelkill.common.AppIds
 import com.reelkill.data.db.entity.AppSettings
+import com.reelkill.ui.app.AppSelector
 import com.reelkill.ui.theme.Accent
 import com.reelkill.ui.theme.AccentBg
 import com.reelkill.ui.theme.BorderHairline
@@ -47,8 +49,10 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
+    val selectedAppId by viewModel.selectedAppId.collectAsState()
     val message by viewModel.lastWriteMessage.collectAsState()
     var pin by remember { mutableStateOf(settings.strictModePin.orEmpty()) }
+    val appName = AppIds.displayName(settings.appId)
 
     LaunchedEffect(settings.strictModePin) {
         pin = settings.strictModePin.orEmpty()
@@ -76,8 +80,8 @@ fun SettingsScreen(
             )
         }
         item {
-            com.reelkill.ui.app.AppSelector(
-                selectedAppId = settings.appId,
+            AppSelector(
+                selectedAppId = selectedAppId,
                 onAppSelected = viewModel::selectApp
             )
         }
@@ -98,31 +102,31 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(10.dp))
                 SettingSwitch(
                     title = "Block Reels tab",
-                    description = "Back out when Instagram opens the Reels surface.",
+                    description = "Back out when $appName opens its short-form feed surface.",
                     checked = settings.blockReelsTab,
                     onCheckedChange = viewModel::toggleBlockReelsTab
                 )
                 SettingSwitch(
                     title = "Block Explore",
-                    description = "Stops the Explore rabbit hole before it starts.",
+                    description = "Stops infinite recommendations before they start.",
                     checked = settings.blockExplore,
                     onCheckedChange = viewModel::toggleBlockExplore
                 )
                 SettingSwitch(
                     title = "Hide Stories tray",
-                    description = "Accessibility rule hides story entry points where possible.",
+                    description = "Hides story entry points through accessibility rules.",
                     checked = settings.blockStories,
                     onCheckedChange = viewModel::toggleBlockStories
                 )
                 SettingSwitch(
                     title = "Hide Suggested posts",
-                    description = "Keeps the main feed from becoming infinite recommendations.",
+                    description = "Keeps feeds from becoming endless recommendations.",
                     checked = settings.blockSuggested,
                     onCheckedChange = viewModel::toggleBlockSuggested
                 )
                 SettingSwitch(
                     title = "Allow Reels in DMs",
-                    description = "Loosens enforcement for shared reels in messages.",
+                    description = "Loosens enforcement for reels shared in direct messages.",
                     checked = settings.allowReelsInDm,
                     onCheckedChange = viewModel::toggleAllowReelsInDm
                 )

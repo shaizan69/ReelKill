@@ -18,14 +18,16 @@ import kotlin.math.max
 
 internal fun Context.dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
-internal fun baseOverlayRoot(context: Context, dimAmount: Int = 238): FrameLayout {
+internal fun baseOverlayRoot(context: Context, dimAmount: Int = 140): FrameLayout {
     return FrameLayout(context).apply {
-        setBackgroundColor(Color.argb(dimAmount, 244, 237, 224)) // BgPage #f4ede0
-        isClickable = true
-        isFocusable = true
+        // Transparent host - never a touch wall. Badge windows are WRAP_CONTENT
+        // top-centered; touches everywhere else pass to the app.
+        setBackgroundColor(Color.TRANSPARENT)
+        isClickable = false
+        isFocusable = false
         layoutParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT
+            FrameLayout.LayoutParams.WRAP_CONTENT
         )
     }
 }
@@ -138,4 +140,124 @@ internal fun progressBar(context: Context, progress: Int, max: Int): ProgressBar
         this.max = max.coerceAtLeast(1)
         this.progress = progress.coerceIn(0, this.max)
     }
+}
+
+/**
+ * Extension-style floating badge (mirrors reels-blur.js):
+ * dark pill, icon + title + subtitle + mono timer + progress + close X.
+ * Container is touch-transparent; only the pill itself is clickable.
+ * Close hides the badge only - enforcement continues until expiry.
+ */
+internal fun reelsBlurBadge(
+    context: Context,
+    title: String,
+    subtitle: String,
+    timerText: String,
+    progressText: String,
+    titleColor: Int,
+    iconText: String,
+    onClose: () -> Unit
+): View {
+    val (root, _) = reelsBlurBadgeLive(
+        context, title, subtitle, timerText, progressText, titleColor, iconText, onClose
+    )
+    return root
+}
+
+/**
+ * Same badge but exposes the timer TextView for live countdown updates.
+ * Returns Pair(view, timerLabel). Caller must cancel its own timer on dispose.
+ */
+internal fun reelsBlurBadgeLive(
+    context: Context,
+    title: String,
+    subtitle: String,
+    timerText: String,
+    progressText: String,
+    titleColor: Int,
+    iconText: String,
+    onClose: () -> Unit
+): Pair<View, android.widget.TextView> {
+    val bg = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = context.dp(16).toFloat()
+        setColor(Color.parseColor("#EB0F0F0F")) // rgba(15,15,15,0.92)
+        setStroke(context.dp(1), Color.parseColor("#1FFFFFFF"))
+    }
+    val pill = LinearLayout(context).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(context.dp(20), context.dp(14), context.dp(12), context.dp(14))
+        background = bg
+        isClickable = true
+    }
+
+    val icon = TextView(context).apply {
+        text = iconText
+        textSize = 22f
+        gravity = Gravity.CENTER
+        setPadding(0, 0, context.dp(14), 0)
+    }
+
+    val body = LinearLayout(context).apply {
+        orientation = LinearLayout.VERTICAL
+    }
+    val titleView = TextView(context).apply {
+        text = title.uppercase()
+        setTextColor(titleColor)
+        textSize = 11f
+        typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+    }
+    val subtitleView = TextView(context).apply {
+        text = subtitle
+        setTextColor(Color.parseColor("#8CFFFFFF"))
+        textSize = 11f
+    }
+    val timerView = TextView(context).apply {
+        text = timerText
+        setTextColor(titleColor)
+        textSize = 20f
+        typeface = Typeface.MONOSPACE
+    }
+    val progressView = TextView(context).apply {
+        text = progressText
+        setTextColor(Color.parseColor("#73FFFFFF"))
+        textSize = 10f
+    }
+    body.addView(titleView)
+    body.addView(subtitleView)
+    body.addView(timerView)
+    body.addView(progressView)
+
+    val close = TextView(context).apply {
+        text = "×"
+        setTextColor(Color.parseColor("#66FFFFFF"))
+        textSize = 22f
+        gravity = Gravity.CENTER
+        setPadding(context.dp(8), context.dp(4), context.dp(8), context.dp(4))
+        isClickable = true
+        setOnClickListener { onClose() }
+    }
+
+    pill.addView(icon)
+    pill.addView(body)
+    pill.addView(close)
+
+    // Transparent wrapper so only the pill intercepts touches.
+    val root = FrameLayout(context).apply {
+        setBackgroundColor(Color.TRANSPARENT)
+        isClickable = false
+        isFocusable = false
+        addView(
+            pill,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            ).apply {
+                topMargin = context.dp(16)
+            }
+        )
+    }
+    return Pair(root, timerView)
 }

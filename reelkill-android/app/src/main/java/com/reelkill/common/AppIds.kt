@@ -4,6 +4,7 @@ object AppIds {
     const val INSTAGRAM = "com.instagram.android"
     const val YOUTUBE = "com.google.android.youtube"
     const val TIKTOK = "com.zhiliaoapp.musically"
+    const val TIKTOK_GLOBAL = "com.ss.android.ugc.trill"
     const val FACEBOOK = "com.facebook.katana"
     const val SNAPCHAT = "com.snapchat.android"
     const val REDDIT = "com.reddit.frontpage"
@@ -13,6 +14,7 @@ object AppIds {
         INSTAGRAM,
         YOUTUBE,
         TIKTOK,
+        TIKTOK_GLOBAL,
         FACEBOOK,
         SNAPCHAT,
         REDDIT,
@@ -23,7 +25,7 @@ object AppIds {
         return when (packageName) {
             INSTAGRAM -> "Instagram"
             YOUTUBE -> "YouTube"
-            TIKTOK -> "TikTok"
+            TIKTOK, TIKTOK_GLOBAL -> "TikTok"
             FACEBOOK -> "Facebook"
             SNAPCHAT -> "Snapchat"
             REDDIT -> "Reddit"

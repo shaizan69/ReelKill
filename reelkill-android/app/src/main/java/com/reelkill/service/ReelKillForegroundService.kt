@@ -23,6 +23,7 @@ import com.reelkill.data.db.entity.AppSettings
 import com.reelkill.data.db.entity.AppState
 import com.reelkill.data.db.entity.BlockingRule
 import com.reelkill.data.db.entity.UsageEvent
+import com.reelkill.data.datastore.ReelKillPreferences
 import com.reelkill.data.repository.SettingsRepository
 import com.reelkill.data.repository.UsageRepository
 import com.reelkill.engine.BudgetEngine
@@ -46,6 +47,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -61,8 +63,10 @@ class ReelKillForegroundService : Service() {
     @Inject lateinit var frictionEngine: FrictionEngine
     @Inject lateinit var patternDetector: PatternDetector
     @Inject lateinit var overlayManager: OverlayManager
+    @Inject lateinit var reelKillPreferences: ReelKillPreferences
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    @Volatile private var targetAppId: String = AppIds.INSTAGRAM
 
     override fun onCreate() {
         super.onCreate()
@@ -72,6 +76,17 @@ class ReelKillForegroundService : Service() {
             return
         }
         isRunning = true
+        serviceScope.launch {
+            runCatching {
+                targetAppId = reelKillPreferences.selectedAppId.first()
+            }
+            reelKillPreferences.selectedAppId.collect { newTarget ->
+                if (targetAppId != newTarget) {
+                    targetAppId = newTarget
+                    overlayManager.removeCurrentOverlay()
+                }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -99,6 +114,7 @@ class ReelKillForegroundService : Service() {
     }
 
     private fun handleAppForeground(appId: String) {
+        if (!isTargetApp(appId)) return
         serviceScope.launch {
             val sessionId = startSessionIfNeeded(appId)
             Timber.d("Foreground session active for $appId: $sessionId")
@@ -115,24 +131,35 @@ class ReelKillForegroundService : Service() {
 
     private fun handleRuleMatched(intent: Intent) {
         val appId = intent.getStringExtra(EXTRA_APP_ID) ?: AppIds.INSTAGRAM
+        if (!isTargetApp(appId)) return
         val ruleId = intent.getStringExtra(EXTRA_RULE_ID) ?: return
         val action = intent.getStringExtra(EXTRA_RULE_ACTION) ?: return
 
         serviceScope.launch {
             val settings = settingsRepository.getOrCreateSettings(appId)
-            if (enforceOnOpen(appId)) return@launch
+            // Extension-equivalent: badge only when hard-block/cooldown is
+            // active. Never BACK/close the app - blur covers in the
+            // accessibility service handle visuals, app stays open for chat.
+            if (enforceOnOpen(appId)) {
+                return@launch
+            }
             if (!shouldApplyRule(ruleId, settings)) return@launch
 
             when (action) {
-                BlockingRule.ACTION_BACK -> ReelKillAccessibilityService.requestGlobalBackFromForegroundService()
+                BlockingRule.ACTION_BACK -> {
+                    Timber.d("Reels surface seen for $ruleId in $appId (under limit, no block)")
+                }
                 BlockingRule.ACTION_HIDE -> Timber.d("HIDE rule matched: $ruleId")
                 BlockingRule.ACTION_LOG -> Timber.d("LOG rule matched: $ruleId")
+                BlockingRule.ACTION_ALLOW -> Timber.d("ALLOW rule matched (no block): $ruleId")
+                else -> Timber.d("Rule matched: $ruleId action=$action")
             }
         }
     }
 
     private fun handleReelViewed(intent: Intent) {
         val appId = intent.getStringExtra(EXTRA_APP_ID) ?: AppIds.INSTAGRAM
+        if (!isTargetApp(appId)) return
         val reelId = intent.getStringExtra(EXTRA_REEL_ID)
         val watchDuration = intent.getLongExtra(EXTRA_WATCH_DURATION_SECONDS, 0L).coerceAtLeast(0L)
 
@@ -204,6 +231,7 @@ class ReelKillForegroundService : Service() {
     }
 
     private fun handleScrollHealth(appId: String) {
+        if (!isTargetApp(appId)) return
         Timber.d("Scroll health triggered for $appId")
         overlayManager.showAntiScroll {
             overlayManager.removeCurrentOverlay()
@@ -211,6 +239,10 @@ class ReelKillForegroundService : Service() {
     }
 
     private suspend fun enforceOnOpen(appId: String): Boolean {
+        if (!isTargetApp(appId)) {
+            overlayManager.removeCurrentOverlay()
+            return false
+        }
         val settings = settingsRepository.getOrCreateSettings(appId)
         scheduledBreakEndInstant(settings)?.let { expiresAt ->
             overlayManager.showScheduledBreak(settings, expiresAt) {
@@ -311,13 +343,24 @@ class ReelKillForegroundService : Service() {
     }
 
     private fun shouldApplyRule(ruleId: String, settings: AppSettings): Boolean {
+        val id = ruleId.lowercase()
         return when {
-            ruleId.contains("reels_tab") || ruleId.contains("reels_viewer") -> settings.blockReelsTab
-            ruleId.contains("explore") -> settings.blockExplore
-            ruleId.contains("stories") -> settings.blockStories
-            ruleId.contains("suggested") -> settings.blockSuggested
+            id.contains("reels_tab") || id.contains("reels_viewer") ||
+                id.contains("reels_fallback") || id.contains("shorts") ||
+                id.contains("foryou") || id.contains("for_you") ||
+                id.contains("spotlight") || id.contains("watch") ||
+                id.contains("video") || id.contains("feed") -> settings.blockReelsTab
+            id.contains("explore") || id.contains("discover") -> settings.blockExplore
+            id.contains("stories") || id.contains("story") -> settings.blockStories
+            id.contains("suggested") || id.contains("sponsored") -> settings.blockSuggested
             else -> true
         }
+    }
+
+    private fun isTargetApp(appId: String): Boolean {
+        if (appId == targetAppId) return true
+        val tiktokSet = setOf(AppIds.TIKTOK, AppIds.TIKTOK_GLOBAL)
+        return appId in tiktokSet && targetAppId in tiktokSet
     }
 
     private fun scheduledBreakEndInstant(

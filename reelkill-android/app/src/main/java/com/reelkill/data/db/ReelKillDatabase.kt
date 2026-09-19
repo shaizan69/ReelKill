@@ -77,8 +77,11 @@ abstract class ReelKillDatabase : RoomDatabase() {
             val allRules = defaultInstagramRules(addedAt) +
                     defaultYouTubeRules(addedAt) +
                     defaultTikTokRules(addedAt) +
+                    defaultTikTokGlobalRules(addedAt) +
                     defaultFacebookRules(addedAt) +
-                    defaultRedditRules(addedAt)
+                    defaultSnapchatRules(addedAt) +
+                    defaultRedditRules(addedAt) +
+                    defaultLinkedInRules(addedAt)
 
             allRules.forEach { rule ->
                 db.insert(
@@ -162,6 +165,26 @@ abstract class ReelKillDatabase : RoomDatabase() {
                     action = BlockingRule.ACTION_HIDE,
                     isActive = true,
                     addedAt = addedAt
+                ),
+                // Fallback content-desc rules so blocking still works when
+                // Instagram renames internal viewIds between app updates.
+                BlockingRule(
+                    id = "instagram_reels_fallback_reels",
+                    appPackage = BlockingRule.INSTAGRAM_PACKAGE,
+                    viewId = null,
+                    contentDescContains = "reels",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
+                ),
+                BlockingRule(
+                    id = "instagram_reels_fallback_clips",
+                    appPackage = BlockingRule.INSTAGRAM_PACKAGE,
+                    viewId = null,
+                    contentDescContains = "clips",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
                 )
             )
         }
@@ -212,6 +235,38 @@ abstract class ReelKillDatabase : RoomDatabase() {
             )
         }
 
+        private fun defaultTikTokGlobalRules(addedAt: String): List<BlockingRule> {
+            return listOf(
+                BlockingRule(
+                    id = "tiktok_global_reels_tab_foryou",
+                    appPackage = AppIds.TIKTOK_GLOBAL,
+                    viewId = null,
+                    contentDescContains = "for you",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
+                ),
+                BlockingRule(
+                    id = "tiktok_global_reels_viewer_main",
+                    appPackage = AppIds.TIKTOK_GLOBAL,
+                    viewId = "com.ss.android.ugc.trill:id/view_pager",
+                    contentDescContains = null,
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
+                ),
+                BlockingRule(
+                    id = "tiktok_global_reels_fallback",
+                    appPackage = AppIds.TIKTOK_GLOBAL,
+                    viewId = null,
+                    contentDescContains = "tiktok",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = false,
+                    addedAt = addedAt
+                )
+            )
+        }
+
         private fun defaultFacebookRules(addedAt: String): List<BlockingRule> {
             return listOf(
                 BlockingRule(
@@ -235,7 +290,7 @@ abstract class ReelKillDatabase : RoomDatabase() {
             )
         }
 
-        private fun defaultRedditRules(addedAt: String): List<BlockingRule> {
+private fun defaultRedditRules(addedAt: String): List<BlockingRule> {
             return listOf(
                 BlockingRule(
                     id = "reddit_reels_tab",
@@ -251,6 +306,52 @@ abstract class ReelKillDatabase : RoomDatabase() {
                     appPackage = AppIds.REDDIT,
                     viewId = null,
                     contentDescContains = "video",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
+                )
+            )
+        }
+
+        private fun defaultSnapchatRules(addedAt: String): List<BlockingRule> {
+            return listOf(
+                BlockingRule(
+                    id = "snapchat_reels_tab_spotlight",
+                    appPackage = AppIds.SNAPCHAT,
+                    viewId = null,
+                    contentDescContains = "spotlight",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
+                ),
+                BlockingRule(
+                    id = "snapchat_reels_viewer",
+                    appPackage = AppIds.SNAPCHAT,
+                    viewId = null,
+                    contentDescContains = "story",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
+                )
+            )
+        }
+
+        private fun defaultLinkedInRules(addedAt: String): List<BlockingRule> {
+            return listOf(
+                BlockingRule(
+                    id = "linkedin_reels_tab_video",
+                    appPackage = AppIds.LINKEDIN,
+                    viewId = null,
+                    contentDescContains = "video",
+                    action = BlockingRule.ACTION_BACK,
+                    isActive = true,
+                    addedAt = addedAt
+                ),
+                BlockingRule(
+                    id = "linkedin_reels_viewer",
+                    appPackage = AppIds.LINKEDIN,
+                    viewId = null,
+                    contentDescContains = "feed",
                     action = BlockingRule.ACTION_BACK,
                     isActive = true,
                     addedAt = addedAt

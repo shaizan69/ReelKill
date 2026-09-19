@@ -18,14 +18,21 @@ fun AppSelector(
     onAppSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Hide legacy com.zhiliaoapp.musically from UI - both TikTok packages
+    // share the "TikTok" label. Backend still listens to both.
+    val uiApps = AppIds.V1_SUPPORTED_APPS
+        .filter { it != AppIds.TIKTOK }
+        .sortedBy { AppIds.displayName(it) }
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 0.dp)
     ) {
-        items(AppIds.V1_SUPPORTED_APPS.toList()) { appId ->
+        items(uiApps) { appId ->
+            val selected = appId == selectedAppId ||
+                (appId == AppIds.TIKTOK_GLOBAL && selectedAppId == AppIds.TIKTOK)
             FilterChip(
-                selected = appId == selectedAppId,
+                selected = selected,
                 onClick = { onAppSelected(appId) },
                 label = { Text(AppIds.displayName(appId)) }
             )

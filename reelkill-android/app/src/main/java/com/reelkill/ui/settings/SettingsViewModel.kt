@@ -25,13 +25,19 @@ class SettingsViewModel @Inject constructor(
     private val _settings = MutableStateFlow(AppSettings.defaultFor(AppIds.INSTAGRAM))
     val settings: StateFlow<AppSettings> = _settings
 
+    private val _selectedAppId = MutableStateFlow(AppIds.INSTAGRAM)
+    val selectedAppId: StateFlow<String> = _selectedAppId
+
     private val _lastWriteMessage = MutableStateFlow<String?>(null)
     val lastWriteMessage: StateFlow<String?> = _lastWriteMessage
 
     init {
         viewModelScope.launch {
             reelKillPreferences.selectedAppId
-                .flatMapLatest { appId -> settingsRepository.observeSettings(appId) }
+                .flatMapLatest { appId ->
+                    _selectedAppId.value = appId
+                    settingsRepository.observeSettings(appId)
+                }
                 .collect { currentSettings ->
                     _settings.update { currentSettings }
                 }

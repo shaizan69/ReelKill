@@ -12,11 +12,10 @@ import com.reelkill.data.db.entity.AppSettings
 import com.reelkill.data.db.entity.AppState
 import com.reelkill.engine.DetectedPattern
 import com.reelkill.ui.overlay.AntiScrollOverlay
-import com.reelkill.ui.overlay.CooldownOverlay
 import com.reelkill.ui.overlay.FrictionModal
-import com.reelkill.ui.overlay.HardBlockOverlay
 import com.reelkill.ui.overlay.PatternWarningOverlay
 import com.reelkill.ui.overlay.ScheduledBreakOverlay
+import com.reelkill.ui.overlay.dp
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.format.DateTimeParseException
 import java.time.Instant
@@ -44,14 +43,19 @@ class OverlayManager @Inject constructor(
             if (current?.type == OverlayType.HARD_BLOCK) return@runOnMain
             removeCurrentOverlay()
 
-            val overlay = HardBlockOverlay(
+            // Extension-style: small top badge + timer, app stays usable.
+            val (view, timerLabel) = com.reelkill.ui.overlay.reelsBlurBadgeLive(
                 context = context,
-                expiresAt = expiresAt,
-                reelsWatched = state.reelsWatchedToday,
-                dailyLimit = settings.dailyLimit,
-                onExpired = onExpired
+                title = "Daily Limit Reached",
+                subtitle = "Reels paused. Resumes in",
+                timerText = com.reelkill.ui.overlay.formatRemaining(expiresAt),
+                progressText = "${state.reelsWatchedToday} / ${settings.dailyLimit} today",
+                titleColor = android.graphics.Color.parseColor("#EF4444"),
+                iconText = "🛑",
+                onClose = { removeCurrentOverlay() }
             )
-            addOverlay(OverlayType.HARD_BLOCK, overlay.createView(), overlay::dispose)
+            val timer = com.reelkill.ui.overlay.startCountdown(expiresAt, timerLabel, onExpired)
+            addBadgeOverlay(OverlayType.HARD_BLOCK, view) { timer.cancel() }
         }
     }
 
@@ -66,16 +70,18 @@ class OverlayManager @Inject constructor(
             if (current?.type == OverlayType.COOLDOWN) return@runOnMain
             removeCurrentOverlay()
 
-            val overlay = CooldownOverlay(
+            val (view, timerLabel) = com.reelkill.ui.overlay.reelsBlurBadgeLive(
                 context = context,
-                expiresAt = expiresAt,
-                reelsWatched = state.reelsWatchedToday,
-                dailyLimit = settings.dailyLimit,
-                cooldownNumber = state.cooldownCountToday,
-                nextDurationSeconds = nextDurationSeconds,
-                onExpired = onExpired
+                title = "Cooldown Active",
+                subtitle = "Take a breather. Resumes in",
+                timerText = com.reelkill.ui.overlay.formatRemaining(expiresAt),
+                progressText = "${state.reelsWatchedToday} / ${settings.dailyLimit} today",
+                titleColor = android.graphics.Color.parseColor("#F59E0B"),
+                iconText = "⏸",
+                onClose = { removeCurrentOverlay() }
             )
-            addOverlay(OverlayType.COOLDOWN, overlay.createView(), overlay::dispose)
+            val timer = com.reelkill.ui.overlay.startCountdown(expiresAt, timerLabel, onExpired)
+            addBadgeOverlay(OverlayType.COOLDOWN, view) { timer.cancel() }
         }
     }
 
@@ -140,21 +146,60 @@ class OverlayManager @Inject constructor(
         }
     }
 
+    private fun addBadgeOverlay(type: OverlayType, view: View, dispose: () -> Unit = {}) {
+        if (!hasOverlayPermission()) {
+            Timber.w("SYSTEM_ALERT_WINDOW not granted; cannot show $type overlay")
+            return
+        }
+
+        // Extension-style badge: small WRAP_CONTENT pill at top-center.
+        // NOT_TOUCH_MODAL => everything outside the pill works normally.
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            y = context.dp(16)
+            setTitle("ReelKill-$type")
+        }
+
+        runCatching {
+            windowManager.removeView(view)
+        }
+        runCatching {
+            windowManager.addView(view, params)
+            current = ManagedOverlay(type, view, dispose)
+        }.onFailure { error ->
+            Timber.e(error, "Failed to add $type overlay")
+        }
+    }
+
     private fun addOverlay(type: OverlayType, view: View, dispose: () -> Unit = {}) {
         if (!hasOverlayPermission()) {
             Timber.w("SYSTEM_ALERT_WINDOW not granted; cannot show $type overlay")
             return
         }
 
+        // Centered cards (friction etc.) also never freeze: touches outside
+        // the card pass through to the app.
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
+            setTitle("ReelKill-$type")
         }
 
         runCatching {

@@ -30,6 +30,24 @@ data class BlockingRule(
 
     companion object {
         const val INSTAGRAM_PACKAGE = "com.instagram.android"
+        const val YOUTUBE_PACKAGE = "com.google.android.youtube"
+        const val TIKTOK_PACKAGE = "com.zhiliaoapp.musically"
+        const val TIKTOK_GLOBAL_PACKAGE = "com.ss.android.ugc.trill"
+        const val FACEBOOK_PACKAGE = "com.facebook.katana"
+        const val SNAPCHAT_PACKAGE = "com.snapchat.android"
+        const val REDDIT_PACKAGE = "com.reddit.frontpage"
+        const val LINKEDIN_PACKAGE = "com.linkedin.android"
+
+        val ALL_BLOCKED_PACKAGES = setOf(
+            INSTAGRAM_PACKAGE,
+            YOUTUBE_PACKAGE,
+            TIKTOK_PACKAGE,
+            TIKTOK_GLOBAL_PACKAGE,
+            FACEBOOK_PACKAGE,
+            SNAPCHAT_PACKAGE,
+            REDDIT_PACKAGE,
+            LINKEDIN_PACKAGE
+        )
 
         const val ACTION_BACK = "BACK"
         const val ACTION_HIDE = "HIDE"
